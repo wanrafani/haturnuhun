@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 
 # ==========================================
 # 1. KONFIGURASI HALAMAN WEB
@@ -430,21 +431,58 @@ AQSOL_IUPAC_DATABASE = {
 }
 
 
-# Helper untuk Menghasilkan URL Gambar 3D Ball and Stick PubChem
-def get_pubchem_3d_url(name, smiles):
-    # Menggunakan nama senyawa jika pencarian SMILES mengalami kendala
-    encoded_smiles = urllib.parse.quote(str(smiles))
-    return f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{encoded_smiles}/PNG?record_type=3d"
+# =========================================================
+# HELPER: INTERACTIVE 3D BALL & STICK VIEWER (3Dmol.js)
+# =========================================================
+def render_3dmol_viewer(smiles_str, height=260):
+    encoded_smiles = urllib.parse.quote(str(smiles_str))
+    sdf_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{encoded_smiles}/SDF?record_type=3d"
+    fallback_img = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{encoded_smiles}/PNG?record_type=3d&image_size=300x300"
+
+    html_code = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+    </head>
+    <body style="margin:0; padding:0; background-color:#ffffff;">
+      <div id="viewer3d" style="width: 100%; height: {height}px; position: relative; border: 1px solid #cbd5e1; border-radius: 8px;"></div>
+      <script>
+        let container = document.getElementById('viewer3d');
+        fetch('{sdf_url}')
+          .then(response => {{
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            return response.text();
+          }})
+          .then(data => {{
+            let viewer = $3Dmol.createViewer(container, {{backgroundColor: 'white'}});
+            viewer.addModel(data, "sdf");
+            // Render Gaya Ball and Stick (Bola & Stik/Wire) PubChem
+            viewer.setStyle({{}}, {{
+                stick: {{radius: 0.14, colorscheme: "Jmol"}},
+                sphere: {{scale: 0.24, colorscheme: "Jmol"}}
+            }});
+            viewer.zoomTo();
+            viewer.render();
+          }})
+          .catch(err => {{
+            container.innerHTML = '<img src="{fallback_img}" style="width:100%; height:auto; border-radius:8px;" alt="3D Structure Ball and Stick"/>';
+          }});
+      </script>
+    </body>
+    </html>
+    """
+    components.html(html_code, height=height + 15)
 
 
 def get_dataframe_with_3d_images(db_dict):
     df = pd.DataFrame(db_dict).T
     df.index.name = "Compound Name"
 
-    # Membuat Gambar 3D Ball & Stick PubChem untuk Setiap Baris
-    df["Structure 3D"] = [
-        get_pubchem_3d_url(name, row["Smiles"]) for name, row in df.iterrows()
-    ]
+    # URL Gambar PNG 3D Ball & Stick dari PubChem REST API
+    df["Structure 3D"] = df["Smiles"].apply(
+        lambda s: f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{urllib.parse.quote(str(s))}/PNG?record_type=3d&image_size=300x300"
+    )
 
     cols = ["Structure 3D", "Smiles", "Group", "pKa1", "Log S0", "MolLogP"]
     return df[cols]
@@ -625,7 +663,7 @@ if selected_compound == "-- Pilih Senyawa untuk Memulai --":
     st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("📚 Dataset Gabungan AqSolDB + IUPAC pKa (45 Senyawa)")
 
-    # Menampilkan DataFrame dengan Gambar Struktur 3D Ball & Stick
+    # Menampilkan DataFrame dengan Gambar Structure 3D Ball & Stick
     df_db_preview = get_dataframe_with_3d_images(AQSOL_IUPAC_DATABASE)
     st.dataframe(
         df_db_preview,
@@ -646,18 +684,11 @@ else:
         "Atur pH Environment Pelarut:", 1.0, 14.0, 7.4, step=0.1
     )
 
-    # Tampilkan Gambar Structure 3D Ball & Stick Senyawa Terpilih di Sidebar
-    img_url_3d = get_pubchem_3d_url(
-        selected_compound, compound_data.get("Smiles", "")
-    )
-
+    # Visualisasi Interaktif 3D Ball and Stick di Sidebar
     st.sidebar.markdown("---")
-    st.sidebar.subheader("📷 Struktur Molekul 3D (Ball & Stick)")
-    st.sidebar.image(
-        img_url_3d,
-        caption=f"{selected_compound} (PubChem 3D Ball & Stick)",
-        width=230,
-    )
+    st.sidebar.subheader("📷 Visualisasi 3D Ball & Stick")
+    st.sidebar.caption("💡 *Gunakan mouse/touch untuk memutar & zoom struktur*")
+    render_3dmol_viewer(compound_data.get("Smiles", ""), height=250)
 
     st.sidebar.markdown("---")
     st.sidebar.subheader("📄 Physical Descriptors")
