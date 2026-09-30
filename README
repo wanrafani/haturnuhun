@@ -1,1 +1,229 @@
-.🧪 SoluChain - AI Organic Compound Solubility PredictorSoluChain adalah aplikasi web berbasis Streamlit dan Sistem Pakar (Knowledge-Based System) yang dirancang untuk memprediksi dan menjelaskan kelarutan molekul organik murni dalam air berdasarkan kondisi pH lingkungan, tingkat ionisasi (persamaan Henderson-Hasselbalch), dan parameter lipofilisitas ($\text{MolLogP}$).🔑 Fitur UtamaInference Engine (Forward Chaining): Menganalisis alur aturan fisikokimia secara berurutan untuk menghitung kelarutan intrinsik ($S_0$) dan kelarutan total ($S_{\text{total}}$).Explainable AI (Rule Execution Log): Menampilkan rekam jejak penalaran sistem (traceable reasoning) secara transparan step-by-step.Visualisasi Molekul 3D Interaktif: Menggunakan pustaka JavaScript 3Dmol.js yang terintegrasi langsung dengan API PubChem REST.Kurva Profil pH vs Kelarutan: Grafik interaktif Plotly berbasis skala logaritmik untuk melihat tren kelarutan dari pH 1.0 hingga 14.0.Klasifikasi USP (United States Pharmacopeia): Pengelompokan tingkat kelarutan otomatis dari Sangat Mudah Larut hingga Praktis Tidak Larut.🏗️ Struktur & Penjelasan Komponen Kode1. Import Library & Konfigurasi Halamanstreamlit & streamlit.components.v1: Kerangka kerja UI web dan pengintegrasi HTML/JS kustom untuk pemutar 3D.plotly.graph_objects: Membuat grafik profil pH vs kelarutan interaktif.pandas & numpy: Pengolahan dataset senyawa dan pembuatan rentang nilai pH.urllib.parse: Untuk URL encoding string SMILES saat memanggil API PubChem.2. Dataset Fisikokimia (AQSOL_IUPAC_DATABASE)Merupakan gabungan data dari AqSolDB dan pustaka IUPAC pKa yang mencakup 45 senyawa organik yang terbagi ke dalam beberapa gugus fungsi (Alcohol, Carboxylic Acid, Ether, Ester, Aldehyde, Ketone, Amine, Phenol, dan Multi-functional).Setiap senyawa menyimpan parameter:Smiles: Notasi struktur molekul.Group: Gugus fungsi utama.pKa1: Konstanta disosiasi asam/basa.Log S0: Logaritma kelarutan intrinsik (bentuk netral/terionisasi nol).MolLogP: Koefisien partisipasi oktanol-air (tingkat lipofilisitas).3. Visualizer Molekul 3D (render_3dmol_viewer)Fungsi ini menyematkan kode HTML/JavaScript (3Dmol.js) menggunakan components.html:Mengambil struktur 3D format .sdf langsung dari PubChem REST API menggunakan notasi SMILES molekul.Jika API gagal atau tidak merespons, viewer memiliki mekanisme fallback untuk menampilkan gambar 3D statis (PNG).Di-render dalam tampilan stick & sphere interaktif (bisa diputar dan di-zoom).4. Mesin Inferensi / Forward Chaining Engine (forward_chaining_engine)Fungsi ini merupakan inti sistem pakar yang bekerja dalam beberapa tahap:Step A: Validasi Senyawa Murni (is_pure_organic)Mengecek apakah SMILES mengandung karakter garam/kompleks (.) atau simbol logam (Na, K, Ca, Mg, dll). Jika ada, molekul ditolak (Rejected).Step B: Evaluasi Aturan Disosiasi Asam-BasaSistem menerapkan kalkulasi berdasarkan gugus fungsi dan nilai $pKa$:Asam Lemah (Carboxylic Acid / Multi-functional pKa < 7):$$S_{\text{total}} = S_0 \times \left(1 + 10^{\text{pH} - pKa}\right)$$(Kelarutan naik saat $\text{pH} > pKa$ karena pembentukan anion $A^-$)Basa Lemah (Amine):$$S_{\text{total}} = S_0 \times \left(1 + 10^{pKa - \text{pH}}\right)$$(Kelarutan naik saat $\text{pH} < pKa$ karena terprotonasi menjadi $BH^+$)Fenol (Phenol):$$S_{\text{total}} = S_0 \times \left(1 + 10^{\text{pH} - pKa}\right)$$(Kelarutan naik pada pH basa saat ion fenolat terbentuk)Netral / Tanpa pKa (Ether, Ester, Alcohol, Ketone, Aldehyde):$S_{\text{total}} = S_0$ (Kelarutan dianalisis berdasarkan indikator $\text{MolLogP}$)Step C: Klasifikasi Tingkat Kelarutan (Skala USP)Nilai $S_{\text{total}}$ (dalam mol/L) diklasifikasikan ke dalam kategori standar:Nilai Stotal​ (mol/L)Kategori KelarutanWarna Indikator$\ge 100.0$Sangat Mudah LarutHijau Tua (#16a34a)$30.0 - 99.9$Mudah LarutHijau Muda (#65a30d)$10.0 - 29.9$LarutKuning/Oranye (#d97706)$1.0 - 9.9$Agak Sukar LarutOranye Tua (#ea580c)$0.1 - 0.99$Sukar LarutMerah (#dc2626)$< 0.1$Praktis Tidak LarutMerah Gelap (#991b1b)5. Antarmuka Pengguna (User Interface Streamlit)Sidebar:Dropdown pemilih senyawa organik.Slider penyesuaian pH pelarut ($\text{pH } 1.0 - 14.0$).Panel visualisasi 3D molekul.Ringkasan desikriptor fisikokimia.Main Section:Landing Page: Tampilan selamat datang, panduan penggunaan, dan pratinjau tabel database jika belum ada senyawa yang dipilih.Dashboard Analisis: Menampilkan 4 Kartu KPI Metrik Utama ($S_0$, Gugus Fungsi, Tingkat Kelarutan $S_{\text{total}}$, $pKa1$).Tab Navigasi:Traceable Reasoning Chain: Log logis yang menampilkan aturan mana saja yang aktif (fired).Profil pH vs Kelarutan: Grafik logaritmik interaktif dengan penanda titik kondisi terdeteksi.Dataset Table: Tabel ringkasan seluruh database 45 senyawa.
+📑 Penjelasan Detail Kode (Code Walkthrough)
+---
+
+## 1. Import Library & Modul
+
+```python
+import math
+import urllib.parse
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
+import streamlit.components.v1 as components
+
+```
+
+* **`urllib.parse`**: Mengonversi nama/string SMILES molekul menjadi format URL-safe saat memanggil API luar.
+* **`numpy` & `pandas**`: Mengolah rentang numerik pH ($1.0 - 14.0$) dan memanipulasi dataset senyawa dalam bentuk tabel Dataframe.
+* **`plotly.graph_objects`**: Membuat grafik interaktif kurva kelarutan vs pH.
+* **`streamlit` & `components**`: Menyediakan antarmuka web interaktif serta fungsi penyematan kode HTML/JS kustom.
+
+---
+
+## 2. Konfigurasi Halaman & Custom CSS (Tema Elegant Light)
+
+```python
+st.set_page_config(
+    page_title="SoluChain - AI Organic Compound Solubility Predictor",
+    page_icon="🧪",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+```
+
+Mengatur judul tab browser, ikon, layout menjadi *wide* (melebar), dan membuka sidebar secara otomatis.
+
+```python
+st.markdown(""" <style> ... </style> """, unsafe_allow_html=True)
+
+```
+
+Menyuntikkan CSS kustom untuk mengubah gaya visual default Streamlit:
+
+* **`.stApp`**: Mengubah warna latar belakang aplikasi menjadi abu-abu kebiruan muda (`#f8fafc`).
+* **`.main-header`**: Membuat banner gradien biru dengan efek bayangan.
+* **`.metric-card`**: Membuat kartu indikator KPI kustom dengan garis tepi biru.
+* **`.rule-box`**: Mengatur tampilan kotak log eksekusi aturan bergaya terminal/monospaced (`#eff6ff`).
+
+---
+
+## 3. Database Fisikokimia (`stot_data` & `AQSOL_IUPAC_DATABASE`)
+
+```python
+AQSOL_IUPAC_DATABASE = {
+    "butan-1-ol": {
+        "Smiles": "CCCCO",
+        "Group": "Alcohol",
+        "pKa1": 16.1,
+        "Log S0": -0.050409,
+        "MolLogP": 0.88,
+    },
+    ...
+}
+
+```
+
+Merupakan struktur data *dictionary* Python yang menyimpan 45 senyawa organik beserta deskriptor fisikokimianya:
+
+* **`Smiles`**: Notasi struktur kimia.
+* **`Group`**: Klasifikasi gugus fungsi utama.
+* **`pKa1`**: Konstanta disosiasi asam/basa.
+* **`Log S0`**: Kelarutan intrinsik bentuk netral dalam skala $\log_{10}(\text{mol/L})$.
+* **`MolLogP`**: Koefisien partisipasi oktanol-air (tingkat lipofilisitas).
+
+---
+
+## 4. Helper: Visualizer 3D Molekul Interaktif (`render_3dmol_viewer`)
+
+```python
+def render_3dmol_viewer(smiles_str, height=270):
+    encoded_smiles = urllib.parse.quote(str(smiles_str))
+    sdf_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{encoded_smiles}/SDF?record_type=3d"
+    fallback_img = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{encoded_smiles}/PNG?record_type=3d&image_size=300x300"
+    ...
+    components.html(html_code, height=height + 15)
+
+```
+
+* **Fungsi**: Membangun tampilan molekul 3D di dalam sidebar.
+* **Alur Kerja**:
+1. Meng-encode SMILES agar aman digunakan dalam URL.
+2. Mengambil struktur 3D format `.sdf` dari **PubChem REST API**.
+3. Menggunakan library JavaScript **`3Dmol.js`** untuk menampilkan model molekul tipe *Stick & Sphere* yang dapat diputar/di-zoom.
+4. **Fallback Mechanism**: Jika struktur 3D `.sdf` tidak ditemukan di PubChem, JavaScript akan menangkap error (*catch*) dan secara otomatis mengalihkan tampilan ke gambar PNG statis.
+
+
+
+---
+
+## 5. Mesin Inferensi / Forward Chaining Engine (`forward_chaining_engine`)
+
+Fungsi utama yang menjalankan sistem pakar berbasis aturan (*rule-based expert system*).
+
+### A. Validasi Molekul Organik Murni
+
+```python
+def is_pure_organic(smiles):
+    if not smiles or "." in smiles: return False
+    metals = ["Na", "K", "Ca", "Mg", "Fe", "Zn", "Li", "Ba"]
+    for m in metals:
+        if m in smiles: return False
+    return True
+
+```
+
+Memeriksa apakah molekul memiliki titik `.` (menandakan garam/kompleks) atau unsur logam. Jika ada, sistem akan menolak (*reject*) perhitungan karena rumus Henderson-Hasselbalch standar hanya berlaku untuk molekul organik murni.
+
+### B. Evaluasi Aturan Ionisasi & Kalkulasi Kelarutan Total ($S_{\text{total}}$)
+
+```python
+# Konversi Log S0 ke skala linear (mol/L)
+S0 = 10**sol_log
+
+```
+
+Mengubah nilai intrinsik dari skala logaritma ke molaritas aktual.
+
+```python
+# Rule 1: Senyawa Netral / Tanpa pKa
+if pKa1 is None:
+    S_total = S0
+
+# Rule 2: Asam Lemah (Carboxylic Acid) / Multi-functional Asam
+elif group == "Carboxylic Acid" or (group == "Multi-functional" and pKa1 < 7):
+    S_total = S0 * (1 + 10 ** (target_pH - pKa1))
+
+# Rule 3: Basa Lemah (Amine)
+elif group == "Amine":
+    S_total = S0 * (1 + 10 ** (pKa1 - target_pH))
+
+# Rule 4: Fenol
+elif group == "Phenol":
+    S_total = S0 * (1 + 10 ** (target_pH - pKa1))
+
+```
+
+Mengeksekusi aturan spesifik berdasarkan gugus fungsi dan hubungan antara nilai $\text{pH}$ pelarut dengan $pKa1$:
+
+* **Asam & Fenol**: Terionisasi ($A^-$) pada $\text{pH} > pKa1$, meningkatkan kelarutan secara eksponensial.
+* **Basa (Amina)**: Terprotonasi ($BH^+$) pada $\text{pH} < pKa1$, meningkatkan kelarutan pada kondisi asam.
+
+### C. Klasifikasi Standar USP (United States Pharmacopeia)
+
+```python
+if S_total >= 100.0: cat, color = "Sangat Mudah Larut", "#16a34a"
+elif S_total >= 30.0: cat, color = "Mudah Larut", "#65a30d"
+elif S_total >= 10.0: cat, color = "Larut", "#d97706"
+elif S_total >= 1.0:  cat, color = "Agak Sukar Larut", "#ea580c"
+elif S_total >= 0.1:  cat, color = "Sukar Larut", "#dc2626"
+else:                cat, color = "Praktis Tidak Larut", "#991b1b"
+
+```
+
+Mengkategorikan hasil akhir $S_{\text{total}}$ ke dalam 6 tingkatan kelarutan USP lengkap dengan kode warna indikatornya.
+
+---
+
+## 6. Sidebar & Kontrol Pengguna
+
+```python
+selected_compound = st.sidebar.selectbox("Pilih Senyawa Organik:", compound_options)
+target_pH = st.sidebar.slider("Atur pH Environment Pelarut:", 1.0, 14.0, 7.4, step=0.1)
+
+```
+
+* Memungkinkan pengguna memilih salah satu dari 45 senyawa.
+* Menyediakan slider interaktif untuk mengubah nilai pH lingkungan dari $1.0$ hingga $14.0$ (default $7.4$ - pH fisiologis).
+
+---
+
+## 7. Logika Tampilan (Landing Page vs Dashboard)
+
+### Condition 1: Landing Page (Belum Ada Senyawa Dipilih)
+
+```python
+if selected_compound == "-- Pilih Senyawa untuk Memulai --":
+    st.markdown(""" <div class="hero-card"> ... </div> """, unsafe_allow_html=True)
+    st.dataframe(df_db_preview, use_container_width=True)
+
+```
+
+Menampilkan kartu *Hero/Welcome*, petunjuk langkah penggunaan, dan pratinjau tabel dataset lengkap.
+
+### Condition 2: Dashboard Hasil Analisis
+
+Jika senyawa dipilih, sistem langsung memproses data melalui `forward_chaining_engine` dan menampilkan:
+
+1. **4 Metrik KPI Utama**:
+* $S_0$ (Kelarutan Intrinsik)
+* Gugus Fungsi
+* Tingkat Kelarutan Total ($S_{\text{total}}$) & Kategori USP
+* Nilai $pKa1$
+
+
+2. **Tab 1 - Explainable AI (Rule Execution Log)**:
+```python
+for log in rule_logs:
+    st.markdown(f'<div class="rule-box">{log}</div>', unsafe_allow_html=True)
+
+```
+
+
+Menampilkan seluruh log penalaran (*reasoning step*) yang terjadi saat aturan dieksekusi.
+3. **Tab 2 - Profil pH vs Kelarutan (Plotly Curve)**:
+```python
+pH_array = np.linspace(1, 14, 200)
+S_array = [forward_chaining_engine(compound_data, ph)[1] for ph in pH_array]
+
+```
+
+
+* Membuat 200 titik data dari pH 1 hingga 14.
+* Menghitung kelarutan di setiap titik pH untuk membentuk kurva kontinu.
+* Menambahkan penanda (*diamond marker*) berwarna merah pada posisi pH yang sedang dipilih pengguna.
+
+
+4. **Tab 3 - Dataset Table**:
+Menampilkan tabel interaktif seluruh database senyawa yang diolah menggunakan `pandas.DataFrame`.
