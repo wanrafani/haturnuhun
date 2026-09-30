@@ -101,7 +101,7 @@ st.markdown(
 )
 
 # =========================================================
-# 3. DATABASE SENYAWA LENGKAP (45 SENYAWA - VALIDATED SMILES)
+# 3. DATABASE SENYAWA LENGKAP (45 SENYAWA)
 # =========================================================
 AQSOL_IUPAC_DATABASE = {
     # --- 1. ALCOHOL ---
@@ -432,9 +432,9 @@ AQSOL_IUPAC_DATABASE = {
 
 
 # =========================================================
-# HELPER: INTERACTIVE 3D BALL & STICK VIEWER (3Dmol.js)
+# HELPER: INTERACTIVE 3D BALL & STICK VIEWER (CUSTOM SCALE)
 # =========================================================
-def render_3dmol_viewer(smiles_str, height=260):
+def render_3dmol_viewer(smiles_str, height=270):
     encoded_smiles = urllib.parse.quote(str(smiles_str))
     sdf_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{encoded_smiles}/SDF?record_type=3d"
     fallback_img = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{encoded_smiles}/PNG?record_type=3d&image_size=300x300"
@@ -457,10 +457,11 @@ def render_3dmol_viewer(smiles_str, height=260):
           .then(data => {{
             let viewer = $3Dmol.createViewer(container, {{backgroundColor: 'white'}});
             viewer.addModel(data, "sdf");
-            // Render Gaya Ball and Stick (Bola & Stik/Wire) PubChem
+            
+            // Penyesuaian Gaya: Stick Ramping (0.07) & Sphere Besar (0.38)
             viewer.setStyle({{}}, {{
-                stick: {{radius: 0.14, colorscheme: "Jmol"}},
-                sphere: {{scale: 0.24, colorscheme: "Jmol"}}
+                stick: {{radius: 0.07, colorscheme: "Jmol"}},
+                sphere: {{scale: 0.38, colorscheme: "Jmol"}}
             }});
             viewer.zoomTo();
             viewer.render();
@@ -479,7 +480,7 @@ def get_dataframe_with_3d_images(db_dict):
     df = pd.DataFrame(db_dict).T
     df.index.name = "Compound Name"
 
-    # URL Gambar PNG 3D Ball & Stick dari PubChem REST API
+    # URL Gambar PNG 3D Ball & Stick PubChem REST API
     df["Structure 3D"] = df["Smiles"].apply(
         lambda s: f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{urllib.parse.quote(str(s))}/PNG?record_type=3d&image_size=300x300"
     )
@@ -686,8 +687,8 @@ else:
 
     # Visualisasi Interaktif 3D Ball and Stick di Sidebar
     st.sidebar.markdown("---")
-    st.sidebar.subheader("📷 Visualisasi 3D Ball & Stick")
-    st.sidebar.caption("💡 *Gunakan mouse/touch untuk memutar & zoom struktur*")
+    st.sidebar.subheader("📷 Visualisasi 3D (Bola Besar & Stik Ramping)")
+    st.sidebar.caption("💡 *Klik & geser untuk memutar atau memperbesar molekul*")
     render_3dmol_viewer(compound_data.get("Smiles", ""), height=250)
 
     st.sidebar.markdown("---")
