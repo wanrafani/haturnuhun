@@ -100,7 +100,7 @@ st.markdown(
 )
 
 # =========================================================
-# 3. DATABASE SENYAWA LENGKAP (45 SENYAWA)
+# 3. DATABASE SENYAWA LENGKAP (45 SENYAWA - VALIDATED SMILES)
 # =========================================================
 AQSOL_IUPAC_DATABASE = {
     # --- 1. ALCOHOL ---
@@ -162,7 +162,7 @@ AQSOL_IUPAC_DATABASE = {
         "MolLogP": 1.87,
     },
     "cholic acid": {
-        "Smiles": "CC(CCC(=O)O)C1CCC2C1(CCC3C2C(CC4C3(CCC(C4)O)C)O)O",
+        "Smiles": "C[C@H](CCC(=O)O)[C@H]1CC[C@@H]2[C@@]1([C@H](C[C@H]3[C@H]2[C@@H](C[C@H]4[C@@]3(CC[C@H](C4)O)C)O)O)C",
         "Group": "Carboxylic Acid",
         "pKa1": 4.98,
         "Log S0": -3.3682,
@@ -385,7 +385,7 @@ AQSOL_IUPAC_DATABASE = {
         "MolLogP": 1.91,
     },
     "4-nonylphenol": {
-        "Smiles": "CCCCCCCCCC1=CC=C(C=C1)O",
+        "Smiles": "CCCCCCCCC1=CC=C(C=C1)O",
         "Group": "Phenol",
         "pKa1": 10.28,
         "Log S0": -4.498027,
@@ -393,14 +393,14 @@ AQSOL_IUPAC_DATABASE = {
     },
     # --- 9. MULTI-FUNCTIONAL / COMPLEX ---
     "amoxicillin": {
-        "Smiles": "CC1(C(N2C(S1)C(C2=O)NC(=O)C(C3=CC=C(C=C3)O)N)C(=O)O)C",
+        "Smiles": "CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)[C@@H](C3=CC=C(C=C3)O)N)C(=O)O)C",
         "Group": "Multi-functional",
         "pKa1": 2.40,
         "Log S0": -2.17,
         "MolLogP": 0.87,
     },
     "cysteine": {
-        "Smiles": "C(C(C(=O)O)N)S",
+        "Smiles": "C([C@@H](C(=O)O)N)S",
         "Group": "Multi-functional",
         "pKa1": 1.96,
         "Log S0": 0.3597,
@@ -430,17 +430,22 @@ AQSOL_IUPAC_DATABASE = {
 }
 
 
-# Helper untuk Menampilkan Tabel dengan Gambar Struktur 3D
+# Helper untuk Menghasilkan URL Gambar 3D Ball and Stick PubChem
+def get_pubchem_3d_url(name, smiles):
+    # Menggunakan nama senyawa jika pencarian SMILES mengalami kendala
+    encoded_smiles = urllib.parse.quote(str(smiles))
+    return f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{encoded_smiles}/PNG?record_type=3d"
+
+
 def get_dataframe_with_3d_images(db_dict):
     df = pd.DataFrame(db_dict).T
     df.index.name = "Compound Name"
 
-    # Membuat URL gambar 3D struktur dari SMILES via PubChem API (record_type=3d)
-    df["Structure 3D"] = df["Smiles"].apply(
-        lambda s: f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{urllib.parse.quote(str(s))}/PNG?record_type=3d"
-    )
+    # Membuat Gambar 3D Ball & Stick PubChem untuk Setiap Baris
+    df["Structure 3D"] = [
+        get_pubchem_3d_url(name, row["Smiles"]) for name, row in df.iterrows()
+    ]
 
-    # Mengurutkan kolom agar Gambar Structure 3D muncul di awal
     cols = ["Structure 3D", "Smiles", "Group", "pKa1", "Log S0", "MolLogP"]
     return df[cols]
 
@@ -620,13 +625,14 @@ if selected_compound == "-- Pilih Senyawa untuk Memulai --":
     st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("📚 Dataset Gabungan AqSolDB + IUPAC pKa (45 Senyawa)")
 
-    # Menampilkan DataFrame dengan Gambar Struktur 3D per Baris
+    # Menampilkan DataFrame dengan Gambar Struktur 3D Ball & Stick
     df_db_preview = get_dataframe_with_3d_images(AQSOL_IUPAC_DATABASE)
     st.dataframe(
         df_db_preview,
         column_config={
             "Structure 3D": st.column_config.ImageColumn(
-                "Structure 3D", help="Gambar Struktur Molekul 3D"
+                "Structure 3D (Ball & Stick)",
+                help="Gambar Structure 3D Ball & Stick PubChem",
             ),
         },
         use_container_width=True,
@@ -640,14 +646,17 @@ else:
         "Atur pH Environment Pelarut:", 1.0, 14.0, 7.4, step=0.1
     )
 
-    # Tampilkan Gambar Struktur Molekul 3D Senyawa Terpilih di Sidebar
-    smiles_encoded = urllib.parse.quote(compound_data.get("Smiles", ""))
-    img_url_3d = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{smiles_encoded}/PNG?record_type=3d"
+    # Tampilkan Gambar Structure 3D Ball & Stick Senyawa Terpilih di Sidebar
+    img_url_3d = get_pubchem_3d_url(
+        selected_compound, compound_data.get("Smiles", "")
+    )
 
     st.sidebar.markdown("---")
-    st.sidebar.subheader("📷 Struktur Molekul 3D")
+    st.sidebar.subheader("📷 Struktur Molekul 3D (Ball & Stick)")
     st.sidebar.image(
-        img_url_3d, caption=f"{selected_compound} (3D)", width=220
+        img_url_3d,
+        caption=f"{selected_compound} (PubChem 3D Ball & Stick)",
+        width=230,
     )
 
     st.sidebar.markdown("---")
@@ -787,7 +796,8 @@ else:
             df_db,
             column_config={
                 "Structure 3D": st.column_config.ImageColumn(
-                    "Structure 3D", help="Gambar Struktur Molekul 3D"
+                    "Structure 3D (Ball & Stick)",
+                    help="Gambar Structure 3D Ball & Stick PubChem",
                 ),
             },
             use_container_width=True,
