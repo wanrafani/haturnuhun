@@ -100,66 +100,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ==========================================
-# DATA KELARUTAN TOTAL (Stot) PADA pH 7.4 (mol/L)
-# ==========================================
-stot_data = {
-    # 1. Alcohol
-    "butan-1-ol": 0.8904,
-    "benzyl alcohol": 0.3699,
-    "1-propanol": 4.1687,
-    "ethylene glycol": 16.1105,
-    "2-butanol": 2.4417,
-    # 2. Carboxylic Acid
-    "propanoic acid": 4694.13,
-    "acetic acid": 4706.13,
-    "benzoic acid": 44.71,
-    "cholic acid": 0.1130,
-    "cumic acid": 1.057,
-    # 3. Ether
-    "allyl ether": 0.9537,
-    "butoxybenzene": 0.000244,
-    "methoxychlor": 0.000000289,
-    "diethyl ether": 0.8149,
-    "anisole": 0.0141,
-    # 4. Ester
-    "dimethoate": 0.1090,
-    "cycloate": 0.000395,
-    "fenthoate": 0.0000343,
-    "ethyl acetate": 0.9432,
-    "methyl benzoate": 0.0154,
-    # 5. Aldehyde
-    "formaldehyde": 13.2008,
-    "acetaldehyde": 22.7038,
-    "benzaldehyde": 0.0617,
-    "4-methylbenzaldehyde": 0.0189,
-    "2,2,2-trichloroacetaldehyde": 0.2041,
-    # 6. Ketone
-    "cyclohexanone": 0.8763,
-    "4-methylpent-3-en-2-one": 0.2754,
-    "1-methylpyrrolidin-2-one": 10.000,
-    "acetone": 17.2187,
-    "1-phenylethan-1-one": 0.0524,
-    # 7. Amine
-    "ethylamine": 54460.5,
-    "hexylamine": 114.84,
-    "aniline": 0.3764,
-    "pyridine": 5.795,
-    "benzylamine": 2.540,
-    # 8. Phenol
-    "phenol": 0.9144,
-    "4-methylphenol": 0.1991,
-    "o-aminophenol": 0.1842,
-    "4-nitrophenol": 0.3190,
-    "4-nonylphenol": 0.0000318,
-    # 9. Multi-functional / Complex
-    "amoxicillin": 0.0135,
-    "cysteine": 2.6692,
-    "beta-alanine": 6.1268,
-    "3-aminobenzoic acid": 19.70,
-    "3-hydroxytyramine": 45.99,
-}
-
 # =========================================================
 # 3. DATABASE SENYAWA LENGKAP (45 SENYAWA)
 # =========================================================
@@ -518,7 +458,6 @@ def render_3dmol_viewer(smiles_str, height=270):
             let viewer = $3Dmol.createViewer(container, {{backgroundColor: 'white'}});
             viewer.addModel(data, "sdf");
             
-            // Gaya 3D: Stick Ramping (0.07) & Sphere Besar (0.38)
             viewer.setStyle({{}}, {{
                 stick: {{radius: 0.07, colorscheme: "Jmol"}},
                 sphere: {{scale: 0.38, colorscheme: "Jmol"}}
@@ -574,10 +513,23 @@ def forward_chaining_engine(data, target_pH):
     )
 
     if not is_pure_organic(smiles):
-        logs.append("❌ [FILTER REJECTED] Senyawa bukan molekul organik murni.")
-        return 0.0, 0.0, "Rejected", "#ef4444", logs
+        logs.append(
+            "❌ [FILTER REJECTED] Senyawa bukan molekul organik murni."
+        )
+        return (
+            0.0,
+            0.0,
+            "Rejected",
+            "#ef4444",
+            logs,
+            "-",
+            "Molekul ditolak oleh filter.",
+        )
 
     logs.append("✅ [FILTER PASSED] Molekul Organik Murni Terdeteksi.")
+
+    formula_str = ""
+    calc_steps_str = ""
 
     # Rule Execution berdasarkan pKa1, MolLogP, dan Group
     if pKa1 is None:
@@ -585,6 +537,9 @@ def forward_chaining_engine(data, target_pH):
             f"🔹 [RULE JALUR LIPOFILISITAS FIRED] pKa1 = None → Evaluasi berbasis MolLogP ({mollogp})."
         )
         S_total = S0
+        formula_str = r"S_{tot} = S_0"
+        calc_steps_str = f"Karena tidak memiliki pKa1 terionisasi, nilai kelarutan total sama dengan kelarutan intrinsik netral:\n\n$$S_{{tot}} = S_0 = 10^{{{sol_log:.4f}}} = {S0:.4f} \\text{{ mol/L}}$$"
+
         if mollogp is not None and mollogp < 0.0:
             logs.append("   ↳ MolLogP < 0.0 → Kelarutan bawaan Tinggi.")
         elif mollogp is not None and mollogp <= 2.0:
@@ -600,6 +555,17 @@ def forward_chaining_engine(data, target_pH):
         logs.append(
             f"🔹 [RULE ASAM LEMAH FIRED] IF Group == '{group}' DAN pKa1 ({pKa1}) DAN pH ({target_pH})"
         )
+        exponent = target_pH - pKa1
+        ion_factor = 10**exponent
+        S_total = S0 * (1 + ion_factor)
+
+        formula_str = r"S_{tot} = S_0 \times \left(1 + 10^{\text{pH} - \text{pKa}_1}\right)"
+        calc_steps_str = (
+            f"1. **Kelarutan Intrinsik ($S_0$):** $10^{{{sol_log:.4f}}} = {S0:.6f}\\text{{ mol/L}}$\n"
+            f"2. **Faktor Ionisasi:** $10^{{\\text{{pH}} - \\text{{pKa}}_1}} = 10^{{{target_pH:.1f} - {pKa1:.2f}}} = 10^{{{exponent:.2f}}} = {ion_factor:.4f}$\n"
+            f"3. **Total Kelarutan:** $S_{{tot}} = {S0:.6f} \\times (1 + {ion_factor:.4f}) = {S_total:.4f}\\text{{ mol/L}}$"
+        )
+
         if target_pH > pKa1:
             logs.append(
                 f"   ↳ pH ({target_pH}) > pKa1 ({pKa1}) → Form terionisasi (A-) mendominasi → Kelarutan Meningkat."
@@ -608,12 +574,22 @@ def forward_chaining_engine(data, target_pH):
             logs.append(
                 f"   ↳ pH ({target_pH}) <= pKa1 ({pKa1}) → Form netral HA mendominasi."
             )
-        S_total = S0 * (1 + 10 ** (target_pH - pKa1))
 
     elif group == "Amine":
         logs.append(
             f"🔹 [RULE BASA LEMAH FIRED] IF Group == 'Amine' DAN pKa1 ({pKa1}) DAN pH ({target_pH})"
         )
+        exponent = pKa1 - target_pH
+        ion_factor = 10**exponent
+        S_total = S0 * (1 + ion_factor)
+
+        formula_str = r"S_{tot} = S_0 \times \left(1 + 10^{\text{pKa}_1 - \text{pH}}\right)"
+        calc_steps_str = (
+            f"1. **Kelarutan Intrinsik ($S_0$):** $10^{{{sol_log:.4f}}} = {S0:.6f}\\text{{ mol/L}}$\n"
+            f"2. **Faktor Ionisasi:** $10^{{\\text{{pKa}}_1 - \\text{{pH}}}} = 10^{{{pKa1:.2f} - {target_pH:.1f}}} = 10^{{{exponent:.2f}}} = {ion_factor:.4f}$\n"
+            f"3. **Total Kelarutan:** $S_{{tot}} = {S0:.6f} \\times (1 + {ion_factor:.4f}) = {S_total:.4f}\\text{{ mol/L}}$"
+        )
+
         if target_pH < pKa1:
             logs.append(
                 f"   ↳ pH ({target_pH}) < pKa1 ({pKa1}) → Terprotonasi (BH+) mendominasi → Kelarutan Meningkat."
@@ -622,12 +598,22 @@ def forward_chaining_engine(data, target_pH):
             logs.append(
                 f"   ↳ pH ({target_pH}) >= pKa1 ({pKa1}) → Form netral B mendominasi."
             )
-        S_total = S0 * (1 + 10 ** (pKa1 - target_pH))
 
     elif group == "Phenol":
         logs.append(
             f"🔹 [RULE FENOL FIRED] IF Group == 'Phenol' DAN pKa1 ({pKa1}) DAN pH ({target_pH})"
         )
+        exponent = target_pH - pKa1
+        ion_factor = 10**exponent
+        S_total = S0 * (1 + ion_factor)
+
+        formula_str = r"S_{tot} = S_0 \times \left(1 + 10^{\text{pH} - \text{pKa}_1}\right)"
+        calc_steps_str = (
+            f"1. **Kelarutan Intrinsik ($S_0$):** $10^{{{sol_log:.4f}}} = {S0:.6f}\\text{{ mol/L}}$\n"
+            f"2. **Faktor Ionisasi:** $10^{{\\text{{pH}} - \\text{{pKa}}_1}} = 10^{{{target_pH:.1f} - {pKa1:.2f}}} = 10^{{{exponent:.2f}}} = {ion_factor:.4f}$\n"
+            f"3. **Total Kelarutan:** $S_{{tot}} = {S0:.6f} \\times (1 + {ion_factor:.4f}) = {S_total:.4f}\\text{{ mol/L}}$"
+        )
+
         if target_pH > pKa1:
             logs.append(
                 f"   ↳ pH ({target_pH}) > pKa1 ({pKa1}) → Anion fenolat terbentuk → Kelarutan Meningkat."
@@ -636,7 +622,6 @@ def forward_chaining_engine(data, target_pH):
             logs.append(
                 f"   ↳ pH ({target_pH}) <= pKa1 ({pKa1}) → Bentuk netral mendominasi."
             )
-        S_total = S0 * (1 + 10 ** (target_pH - pKa1))
 
     else:
         pka_cond = f"DAN pKa1 ({pKa1}) > 14" if pKa1 is not None else ""
@@ -644,6 +629,8 @@ def forward_chaining_engine(data, target_pH):
             f"🔹 [RULE NETRAL / HIGH pKa FIRED] IF Group == '{group}' {pka_cond} → Tidak terionisasi signifikan pada pH normal."
         )
         S_total = S0
+        formula_str = r"S_{tot} = S_0"
+        calc_steps_str = f"Senyawa tergolong netral pada rentang pH normal, sehingga:\n\n$$S_{{tot}} = S_0 = 10^{{{sol_log:.4f}}} = {S0:.4f} \\text{{ mol/L}}$$"
 
     # Klasifikasi Tingkat Kelarutan (Skala Standard USP)
     if S_total >= 100.0:
@@ -662,7 +649,7 @@ def forward_chaining_engine(data, target_pH):
     logs.append(
         f"🏁 [FINAL VERDICT] Kelarutan Total Stot = {S_total:.4f} mol/L → Tingkat Kelarutan: {cat}"
     )
-    return S0, S_total, cat, color, logs
+    return S0, S_total, cat, color, logs, formula_str, calc_steps_str
 
 
 # ==========================================
@@ -732,7 +719,9 @@ else:
 
     st.sidebar.markdown("---")
     st.sidebar.subheader("📷 Visualisasi 3D")
-    st.sidebar.caption("💡 *Klik & geser untuk memutar atau memperbesar molekul*")
+    st.sidebar.caption(
+        "💡 *Klik & geser untuk memutar atau memperbesar molekul*"
+    )
     render_3dmol_viewer(compound_data.get("Smiles", ""), height=250)
 
     st.sidebar.markdown("---")
@@ -743,11 +732,17 @@ else:
     st.sidebar.text(f"Log S0: {compound_data.get('Log S0', 'N/A')}")
 
     # Jalankan Engine Inferensi
-    S0_val, S_total, category, cat_color, rule_logs = forward_chaining_engine(
-        compound_data, target_pH
-    )
+    (
+        S0_val,
+        S_total,
+        category,
+        cat_color,
+        rule_logs,
+        formula_str,
+        calc_steps_str,
+    ) = forward_chaining_engine(compound_data, target_pH)
 
-    # Display KPI Cards Berwarna (Metrik 1 = S0 Intrinsik, Metrik 3 = TINGKAT KELARUTAN + Stot pada pH terpilih)
+    # Display KPI Cards Berwarna
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(
@@ -777,6 +772,52 @@ else:
             <div class="metric-value" style="color:#d97706">{pka_display}</div></div>""",
             unsafe_allow_html=True,
         )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # =============================================================
+    # SEKSI PENJELASAN KHUSUS STOT & RANGE KELARUTAN
+    # =============================================================
+    with st.expander(
+        "📌 **Penjelasan Detail: Perhitungan $S_{tot}$ & Ambang Batas Range Kelarutan**",
+        expanded=True,
+    ):
+        col_exp1, col_exp2 = st.columns([1.1, 1.0])
+
+        with col_exp1:
+            st.markdown("### 🧮 1. Kenapa Nilai $S_{tot}$ Didapat Segitu?")
+            st.markdown(
+                f"Gugus fungsi senyawa ini adalah **{compound_data.get('Group')}** dengan pH pelarut **{target_pH}**."
+            )
+            st.markdown("**Rumus Henderson-Hasselbalch yang Digunakan:**")
+            st.latex(formula_str)
+            st.markdown("**Langkah Perhitungan Sederhana:**")
+            st.markdown(calc_steps_str)
+
+        with col_exp2:
+            st.markdown("### 📊 2. Standar Range Kelarutan (Skala USP)")
+            st.markdown(
+                "Penentuan kategori berdasarkan batas konsentrasi total $S_{tot}$ ($\text{mol/L}$):"
+            )
+
+            is_vsol = S_total >= 100.0
+            is_fsol = 30.0 <= S_total < 100.0
+            is_sol = 10.0 <= S_total < 30.0
+            is_ssol = 1.0 <= S_total < 10.0
+            is_slsol = 0.1 <= S_total < 1.0
+            is_insol = S_total < 0.1
+
+            table_md = f"""
+            | Tingkat Kelarutan | Rentang $S_{{tot}}$ (mol/L) | Status Senyawa Ini |
+            | :--- | :--- | :---: |
+            | **Sangat Mudah Larut** | $S_{{tot}} \\ge 100.0$ | {'🟢 **AKTIF**' if is_vsol else '-'} |
+            | **Mudah Larut** | $30.0 \\le S_{{tot}} < 100.0$ | {'🟢 **AKTIF**' if is_fsol else '-'} |
+            | **Larut** | $10.0 \\le S_{{tot}} < 30.0$ | {'🟠 **AKTIF**' if is_sol else '-'} |
+            | **Agak Sukar Larut** | $1.0 \\le S_{{tot}} < 10.0$ | {'🟠 **AKTIF**' if is_ssol else '-'} |
+            | **Sukar Larut** | $0.1 \\le S_{{tot}} < 1.0$ | {'🔴 **AKTIF**' if is_slsol else '-'} |
+            | **Praktis Tidak Larut** | $S_{{tot}} < 0.1$ | {'🔴 **AKTIF**' if is_insol else '-'} |
+            """
+            st.markdown(table_md)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -835,7 +876,6 @@ else:
             )
         )
 
-        # Pengaturan Kontras Warna Teks & Sumbu (Satuan mol/L)
         fig.update_layout(
             template="plotly_white",
             paper_bgcolor="#ffffff",
