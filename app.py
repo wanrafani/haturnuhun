@@ -1,4 +1,5 @@
 import math
+import urllib.parse
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -104,329 +105,345 @@ st.markdown(
 AQSOL_IUPAC_DATABASE = {
     # --- 1. ALCOHOL ---
     "butan-1-ol": {
-        "smiles": "CCCCO",
+        "Smiles": "CCCCO",
         "Group": "Alcohol",
         "pKa1": 16.1,
-        "Solubility": -0.050409,
+        "Log S0": -0.050409,
         "MolLogP": 0.88,
     },
     "benzyl alcohol": {
-        "smiles": "C1=CC=C(C=C1)CO",
+        "Smiles": "C1=CC=C(C=C1)CO",
         "Group": "Alcohol",
         "pKa1": 15.4,
-        "Solubility": -0.4319,
+        "Log S0": -0.4319,
         "MolLogP": 1.10,
     },
     "1-propanol": {
-        "smiles": "CCCO",
+        "Smiles": "CCCO",
         "Group": "Alcohol",
         "pKa1": 16.1,
-        "Solubility": 0.62,
+        "Log S0": 0.62,
         "MolLogP": 0.25,
     },
     "ethylene glycol": {
-        "smiles": "OCCO",
+        "Smiles": "OCCO",
         "Group": "Alcohol",
         "pKa1": 15.4,
-        "Solubility": 1.2071,
+        "Log S0": 1.2071,
         "MolLogP": -1.36,
     },
     "2-butanol": {
-        "smiles": "CCC(C)O",
+        "Smiles": "CCC(C)O",
         "Group": "Alcohol",
         "pKa1": 17.6,
-        "Solubility": 0.3877,
+        "Log S0": 0.3877,
         "MolLogP": 0.65,
     },
     # --- 2. CARBOXYLIC ACID ---
     "propanoic acid": {
-        "smiles": "CCC(=O)O",
+        "Smiles": "CCC(=O)O",
         "Group": "Carboxylic Acid",
         "pKa1": 4.86,
-        "Solubility": 1.130305,
+        "Log S0": 1.130305,
         "MolLogP": 0.33,
     },
     "acetic acid": {
-        "smiles": "CC(=O)O",
+        "Smiles": "CC(=O)O",
         "Group": "Carboxylic Acid",
         "pKa1": 4.73,
-        "Solubility": 1.001718,
+        "Log S0": 1.001718,
         "MolLogP": -0.17,
     },
     "benzoic acid": {
-        "smiles": "C1=CC=C(C=C1)C(=O)O",
+        "Smiles": "C1=CC=C(C=C1)C(=O)O",
         "Group": "Carboxylic Acid",
         "pKa1": 4.13,
-        "Solubility": -1.61993,
+        "Log S0": -1.61993,
         "MolLogP": 1.87,
     },
     "cholic acid": {
-        "smiles": "CC(CCC(=O)O)C1CCC2C1(CCC3C2C(CC4C3(CCC(C4)O)C)O)O",
+        "Smiles": "CC(CCC(=O)O)C1CCC2C1(CCC3C2C(CC4C3(CCC(C4)O)C)O)O",
         "Group": "Carboxylic Acid",
         "pKa1": 4.98,
-        "Solubility": -3.3682,
+        "Log S0": -3.3682,
         "MolLogP": 2.02,
     },
     "cumic acid": {
-        "smiles": "CC(C)C1=CC=C(C=C1)C(=O)O",
+        "Smiles": "CC(C)C1=CC=C(C=C1)C(=O)O",
         "Group": "Carboxylic Acid",
         "pKa1": 4.34,
-        "Solubility": -3.0364,
+        "Log S0": -3.0364,
         "MolLogP": 2.91,
     },
     # --- 3. ETHER ---
     "allyl ether": {
-        "smiles": "C=CCOCC=C",
+        "Smiles": "C=CCOCC=C",
         "Group": "Ether",
         "pKa1": None,
-        "Solubility": -0.0206,
+        "Log S0": -0.0206,
         "MolLogP": 1.36,
     },
     "butoxybenzene": {
-        "smiles": "CCCCOC1=CC=CC=C1",
+        "Smiles": "CCCCOC1=CC=CC=C1",
         "Group": "Ether",
         "pKa1": None,
-        "Solubility": -3.61325,
+        "Log S0": -3.61325,
         "MolLogP": 3.07,
     },
     "methoxychlor": {
-        "smiles": "COC1=CC=C(C=C1)C(C2=CC=C(C=C2)OC)C(Cl)(Cl)Cl",
+        "Smiles": "COC1=CC=C(C=C1)C(C2=CC=C(C=C2)OC)C(Cl)(Cl)Cl",
         "Group": "Ether",
         "pKa1": None,
-        "Solubility": -6.5386,
+        "Log S0": -6.5386,
         "MolLogP": 5.78,
     },
     "diethyl ether": {
-        "smiles": "CCOCC",
+        "Smiles": "CCOCC",
         "Group": "Ether",
         "pKa1": None,
-        "Solubility": -0.0889,
+        "Log S0": -0.0889,
         "MolLogP": 0.89,
     },
     "anisole": {
-        "smiles": "COC1=CC=CC=C1",
+        "Smiles": "COC1=CC=CC=C1",
         "Group": "Ether",
         "pKa1": None,
-        "Solubility": -1.85,
+        "Log S0": -1.85,
         "MolLogP": 2.11,
     },
     # --- 4. ESTER ---
     "dimethoate": {
-        "smiles": "CNC(=O)CSP(=S)(OC)OC",
+        "Smiles": "CNC(=O)CSP(=S)(OC)OC",
         "Group": "Ester",
         "pKa1": None,
-        "Solubility": -0.9624,
+        "Log S0": -0.9624,
         "MolLogP": -0.08,
     },
     "cycloate": {
-        "smiles": "CCN(C1CCCCC1)C(=O)SCC",
+        "Smiles": "CCN(C1CCCCC1)C(=O)SCC",
         "Group": "Ester",
         "pKa1": None,
-        "Solubility": -3.4037,
+        "Log S0": -3.4037,
         "MolLogP": 3.11,
     },
     "fenthoate": {
-        "smiles": "CCOC(=O)C(C1=CC=CC=C1)SP(=S)(OC)OC",
+        "Smiles": "CCOC(=O)C(C1=CC=CC=C1)SP(=S)(OC)OC",
         "Group": "Ester",
         "pKa1": None,
-        "Solubility": -4.4643,
+        "Log S0": -4.4643,
         "MolLogP": 3.68,
     },
     "ethyl acetate": {
-        "smiles": "CCOC(C)=O",
+        "Smiles": "CCOC(C)=O",
         "Group": "Ester",
         "pKa1": None,
-        "Solubility": -0.025404,
+        "Log S0": -0.025404,
         "MolLogP": 0.73,
     },
     "methyl benzoate": {
-        "smiles": "COC(=O)C1=CC=CC=C1",
+        "Smiles": "COC(=O)C1=CC=CC=C1",
         "Group": "Ester",
         "pKa1": None,
-        "Solubility": -1.811798,
+        "Log S0": -1.811798,
         "MolLogP": 2.12,
     },
     # --- 5. ALDEHYDE ---
     "formaldehyde": {
-        "smiles": "C=O",
+        "Smiles": "C=O",
         "Group": "Aldehyde",
         "pKa1": 12.2,
-        "Solubility": 1.1206,
+        "Log S0": 1.1206,
         "MolLogP": 0.35,
     },
     "acetaldehyde": {
-        "smiles": "CC=O",
+        "Smiles": "CC=O",
         "Group": "Aldehyde",
         "pKa1": 13.57,
-        "Solubility": 1.3561,
+        "Log S0": 1.3561,
         "MolLogP": -0.17,
     },
     "benzaldehyde": {
-        "smiles": "C1=CC=C(C=C1)C=O",
+        "Smiles": "C1=CC=C(C=C1)C=O",
         "Group": "Aldehyde",
         "pKa1": 14.9,
-        "Solubility": -1.209572,
+        "Log S0": -1.209572,
         "MolLogP": 1.48,
     },
     "4-methylbenzaldehyde": {
-        "smiles": "CC1=CC=C(C=C1)C=O",
+        "Smiles": "CC1=CC=C(C=C1)C=O",
         "Group": "Aldehyde",
         "pKa1": 15.39,
-        "Solubility": -1.723702,
+        "Log S0": -1.723702,
         "MolLogP": 2.01,
     },
     "2,2,2-trichloroacetaldehyde": {
-        "smiles": "C(=O)C(Cl)(Cl)Cl",
+        "Smiles": "C(=O)C(Cl)(Cl)Cl",
         "Group": "Aldehyde",
         "pKa1": 9.95,
-        "Solubility": -0.691341,
+        "Log S0": -0.691341,
         "MolLogP": 1.42,
     },
     # --- 6. KETONE ---
     "cyclohexanone": {
-        "smiles": "O=C1CCCCC1",
+        "Smiles": "O=C1CCCCC1",
         "Group": "Ketone",
         "pKa1": 16.7,
-        "Solubility": -0.05737,
+        "Log S0": -0.05737,
         "MolLogP": 0.81,
     },
     "4-methylpent-3-en-2-one": {
-        "smiles": "CC(=CC(=O)C)C",
+        "Smiles": "CC(=CC(=O)C)C",
         "Group": "Ketone",
         "pKa1": 20.5,
-        "Solubility": -0.56,
+        "Log S0": -0.56,
         "MolLogP": 1.33,
     },
     "1-methylpyrrolidin-2-one": {
-        "smiles": "CN1CCCC1=O",
+        "Smiles": "CN1CCCC1=O",
         "Group": "Ketone",
         "pKa1": 24.0,
-        "Solubility": 1.00,
+        "Log S0": 1.00,
         "MolLogP": -0.38,
     },
     "acetone": {
-        "smiles": "CC(=O)C",
+        "Smiles": "CC(=O)C",
         "Group": "Ketone",
         "pKa1": 20.0,
-        "Solubility": 1.236,
+        "Log S0": 1.236,
         "MolLogP": -0.24,
     },
     "1-phenylethan-1-one": {
-        "smiles": "CC(=O)C1=CC=CC=C1",
+        "Smiles": "CC(=O)C1=CC=CC=C1",
         "Group": "Ketone",
         "pKa1": 19.2,
-        "Solubility": -1.280387,
+        "Log S0": -1.280387,
         "MolLogP": 1.58,
     },
     # --- 7. AMINE ---
     "ethylamine": {
-        "smiles": "CCN",
+        "Smiles": "CCN",
         "Group": "Amine",
         "pKa1": 10.79,
-        "Solubility": 1.346,
+        "Log S0": 1.346,
         "MolLogP": -0.13,
     },
     "hexylamine": {
-        "smiles": "CCCCCCN",
+        "Smiles": "CCCCCCN",
         "Group": "Amine",
         "pKa1": 10.56,
-        "Solubility": -1.1,
+        "Log S0": -1.1,
         "MolLogP": 2.06,
     },
     "aniline": {
-        "smiles": "C1=CC=C(C=C1)N",
+        "Smiles": "C1=CC=C(C=C1)N",
         "Group": "Amine",
         "pKa1": 4.60,
-        "Solubility": -0.425017,
+        "Log S0": -0.425017,
         "MolLogP": 0.90,
     },
     "pyridine": {
-        "smiles": "C1=CC=NC=C1",
+        "Smiles": "C1=CC=NC=C1",
         "Group": "Amine",
         "pKa1": 5.25,
-        "Solubility": 0.76,
+        "Log S0": 0.76,
         "MolLogP": 0.65,
     },
     "benzylamine": {
-        "smiles": "C1=CC=C(C=C1)CN",
+        "Smiles": "C1=CC=C(C=C1)CN",
         "Group": "Amine",
         "pKa1": 9.33,
-        "Solubility": -1.53,
+        "Log S0": -1.53,
         "MolLogP": 1.09,
     },
     # --- 8. PHENOL ---
     "phenol": {
-        "smiles": "C1=CC=C(C=C1)O",
+        "Smiles": "C1=CC=C(C=C1)O",
         "Group": "Phenol",
         "pKa1": 9.98,
-        "Solubility": -0.04,
+        "Log S0": -0.04,
         "MolLogP": 1.46,
     },
     "4-methylphenol": {
-        "smiles": "CC1=CC=C(C=C1)O",
+        "Smiles": "CC1=CC=C(C=C1)O",
         "Group": "Phenol",
         "pKa1": 10.26,
-        "Solubility": -0.701548,
+        "Log S0": -0.701548,
         "MolLogP": 1.94,
     },
     "o-aminophenol": {
-        "smiles": "C1=CC=C(C(=C1)N)O",
+        "Smiles": "C1=CC=C(C(=C1)N)O",
         "Group": "Phenol",
         "pKa1": 9.71,
-        "Solubility": -0.7369,
+        "Log S0": -0.7369,
         "MolLogP": 0.62,
     },
     "4-nitrophenol": {
-        "smiles": "C1=CC(=CC=C1O)[N+](=O)[O-]",
+        "Smiles": "C1=CC(=CC=C1O)[N+](=O)[O-]",
         "Group": "Phenol",
         "pKa1": 7.15,
-        "Solubility": -0.94,
+        "Log S0": -0.94,
         "MolLogP": 1.91,
     },
     "4-nonylphenol": {
-        "smiles": "CCCCCCCCCC1=CC=C(C=C1)O",
+        "Smiles": "CCCCCCCCCC1=CC=C(C=C1)O",
         "Group": "Phenol",
         "pKa1": 10.28,
-        "Solubility": -4.498027,
+        "Log S0": -4.498027,
         "MolLogP": 5.76,
     },
     # --- 9. MULTI-FUNCTIONAL / COMPLEX ---
     "amoxicillin": {
-        "smiles": "CC1(C(N2C(S1)C(C2=O)NC(=O)C(C3=CC=C(C=C3)O)N)C(=O)O)C",
+        "Smiles": "CC1(C(N2C(S1)C(C2=O)NC(=O)C(C3=CC=C(C=C3)O)N)C(=O)O)C",
         "Group": "Multi-functional",
         "pKa1": 2.40,
-        "Solubility": -2.17,
+        "Log S0": -2.17,
         "MolLogP": 0.87,
     },
     "cysteine": {
-        "smiles": "C(C(C(=O)O)N)S",
+        "Smiles": "C(C(C(=O)O)N)S",
         "Group": "Multi-functional",
         "pKa1": 1.96,
-        "Solubility": 0.3597,
+        "Log S0": 0.3597,
         "MolLogP": -2.49,
     },
     "beta-alanine": {
-        "smiles": "NCCC(=O)O",
+        "Smiles": "NCCC(=O)O",
         "Group": "Multi-functional",
         "pKa1": 3.55,
-        "Solubility": 0.786548,
+        "Log S0": 0.786548,
         "MolLogP": -3.07,
     },
     "3-aminobenzoic acid": {
-        "smiles": "NC1=CC=CC(=C1)C(=O)O",
+        "Smiles": "NC1=CC=CC(=C1)C(=O)O",
         "Group": "Multi-functional",
         "pKa1": 3.12,
-        "Solubility": -1.3663,
+        "Log S0": -1.3663,
         "MolLogP": 0.37,
     },
     "3-hydroxytyramine": {
-        "smiles": "C1=CC(=C(C=C1CCN)O)O",
+        "Smiles": "C1=CC(=C(C=C1CCN)O)O",
         "Group": "Multi-functional",
         "pKa1": 8.93,
-        "Solubility": 0.12,
+        "Log S0": 0.12,
         "MolLogP": -0.98,
     },
 }
+
+
+# Helper untuk Menampilkan Tabel dengan Gambar Struktur 3D
+def get_dataframe_with_3d_images(db_dict):
+    df = pd.DataFrame(db_dict).T
+    df.index.name = "Compound Name"
+
+    # Membuat URL gambar 3D struktur dari SMILES via PubChem API (record_type=3d)
+    df["Structure 3D"] = df["Smiles"].apply(
+        lambda s: f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{urllib.parse.quote(str(s))}/PNG?record_type=3d"
+    )
+
+    # Mengurutkan kolom agar Gambar Structure 3D muncul di awal
+    cols = ["Structure 3D", "Smiles", "Group", "pKa1", "Log S0", "MolLogP"]
+    return df[cols]
+
 
 # ==========================================
 # 4. HELPER & INFERENCE ENGINE (FORWARD CHAINING)
@@ -447,14 +464,16 @@ def forward_chaining_engine(data, target_pH):
     group = data.get("Group", "Unknown")
     pKa1 = data.get("pKa1")
     mollogp = data.get("MolLogP")
-    sol_log = data.get("Solubility", 0.0)
+    sol_log = data.get("Log S0", 0.0)
 
-    # Konversi Solubility dari skala log ke S0 (skala linear)
+    # Konversi Log S0 (skala log mol/L) ke S0 (skala linear mol/L)
     S0 = 10**sol_log if sol_log is not None else 0.0
-    smiles = data.get("smiles", "")
+    smiles = data.get("Smiles", "")
 
     logs.append(f"⚙️ [INIT] Evaluasi Senyawa: {compound_name}")
-    logs.append(f"   ↳ Group: {group} | pKa1: {pKa1} | MolLogP: {mollogp} | Intrinsic log(S): {sol_log}")
+    logs.append(
+        f"   ↳ Group: {group} | pKa1: {pKa1} | MolLogP: {mollogp} | Intrinsic Log S0: {sol_log}"
+    )
 
     if not is_pure_organic(smiles):
         logs.append("❌ [FILTER REJECTED] Senyawa bukan molekul organik murni.")
@@ -464,41 +483,67 @@ def forward_chaining_engine(data, target_pH):
 
     # Rule Execution berdasarkan pKa1, MolLogP, dan Group
     if pKa1 is None:
-        logs.append(f"🔹 [RULE JALUR LIPOFILISITAS FIRED] pKa1 = None → Evaluasi berbasis MolLogP ({mollogp}).")
+        logs.append(
+            f"🔹 [RULE JALUR LIPOFILISITAS FIRED] pKa1 = None → Evaluasi berbasis MolLogP ({mollogp})."
+        )
         S_total = S0
         if mollogp is not None and mollogp < 0.0:
             logs.append("   ↳ MolLogP < 0.0 → Kelarutan bawaan Tinggi.")
         elif mollogp is not None and mollogp <= 2.0:
             logs.append("   ↳ 0.0 <= MolLogP <= 2.0 → Kelarutan bawaan Sedang.")
         else:
-            logs.append("   ↳ MolLogP > 2.0 → Kelarutan bawaan Rendah (Lipofilik).")
+            logs.append(
+                "   ↳ MolLogP > 2.0 → Kelarutan bawaan Rendah (Lipofilik)."
+            )
 
-    elif group == "Carboxylic Acid" or (group == "Multi-functional" and pKa1 < 7):
-        logs.append(f"🔹 [RULE ASAM LEMAH FIRED] IF Group == '{group}' DAN pKa1 ({pKa1}) DAN pH ({target_pH})")
+    elif group == "Carboxylic Acid" or (
+        group == "Multi-functional" and pKa1 < 7
+    ):
+        logs.append(
+            f"🔹 [RULE ASAM LEMAH FIRED] IF Group == '{group}' DAN pKa1 ({pKa1}) DAN pH ({target_pH})"
+        )
         if target_pH > pKa1:
-            logs.append(f"   ↳ pH ({target_pH}) > pKa1 ({pKa1}) → Form terionisasi (A-) mendominasi → Kelarutan Meningkat.")
+            logs.append(
+                f"   ↳ pH ({target_pH}) > pKa1 ({pKa1}) → Form terionisasi (A-) mendominasi → Kelarutan Meningkat."
+            )
         else:
-            logs.append(f"   ↳ pH ({target_pH}) <= pKa1 ({pKa1}) → Form netral HA mendominasi.")
+            logs.append(
+                f"   ↳ pH ({target_pH}) <= pKa1 ({pKa1}) → Form netral HA mendominasi."
+            )
         S_total = S0 * (1 + 10 ** (target_pH - pKa1))
 
     elif group == "Amine":
-        logs.append(f"🔹 [RULE BASA LEMAH FIRED] IF Group == 'Amine' DAN pKa1 ({pKa1}) DAN pH ({target_pH})")
+        logs.append(
+            f"🔹 [RULE BASA LEMAH FIRED] IF Group == 'Amine' DAN pKa1 ({pKa1}) DAN pH ({target_pH})"
+        )
         if target_pH < pKa1:
-            logs.append(f"   ↳ pH ({target_pH}) < pKa1 ({pKa1}) → Terprotonasi (BH+) mendominasi → Kelarutan Meningkat.")
+            logs.append(
+                f"   ↳ pH ({target_pH}) < pKa1 ({pKa1}) → Terprotonasi (BH+) mendominasi → Kelarutan Meningkat."
+            )
         else:
-            logs.append(f"   ↳ pH ({target_pH}) >= pKa1 ({pKa1}) → Form netral B mendominasi.")
+            logs.append(
+                f"   ↳ pH ({target_pH}) >= pKa1 ({pKa1}) → Form netral B mendominasi."
+            )
         S_total = S0 * (1 + 10 ** (pKa1 - target_pH))
 
     elif group == "Phenol":
-        logs.append(f"🔹 [RULE FENOL FIRED] IF Group == 'Phenol' DAN pKa1 ({pKa1}) DAN pH ({target_pH})")
+        logs.append(
+            f"🔹 [RULE FENOL FIRED] IF Group == 'Phenol' DAN pKa1 ({pKa1}) DAN pH ({target_pH})"
+        )
         if target_pH > pKa1:
-            logs.append(f"   ↳ pH ({target_pH}) > pKa1 ({pKa1}) → Anion fenolat terbentuk → Kelarutan Meningkat.")
+            logs.append(
+                f"   ↳ pH ({target_pH}) > pKa1 ({pKa1}) → Anion fenolat terbentuk → Kelarutan Meningkat."
+            )
         else:
-            logs.append(f"   ↳ pH ({target_pH}) <= pKa1 ({pKa1}) → Bentuk netral mendominasi.")
+            logs.append(
+                f"   ↳ pH ({target_pH}) <= pKa1 ({pKa1}) → Bentuk netral mendominasi."
+            )
         S_total = S0 * (1 + 10 ** (target_pH - pKa1))
 
     else:
-        logs.append(f"🔹 [RULE NETRAL / HIGH pKa FIRED] IF Group == '{group}' (pKa1 = {pKa1}) → Tidak terionisasi signifikan pada pH normal.")
+        logs.append(
+            f"🔹 [RULE NETRAL / HIGH pKa FIRED] IF Group == '{group}' (pKa1 = {pKa1}) → Tidak terionisasi signifikan pada pH normal."
+        )
         S_total = S0
 
     # Klasifikasi Tingkat Kelarutan (Skala Standard USP)
@@ -515,7 +560,9 @@ def forward_chaining_engine(data, target_pH):
     else:
         cat, color = "Praktis Tidak Larut", "#991b1b"
 
-    logs.append(f"🏁 [FINAL VERDICT] Kelarutan Total S_total = {S_total:.3f} mg/mL → Tingkat Kelarutan: {cat}")
+    logs.append(
+        f"🏁 [FINAL VERDICT] Kelarutan Total S_total = {S_total:.4f} mol/L → Tingkat Kelarutan: {cat}"
+    )
     return S_total, cat, color, logs
 
 
@@ -572,11 +619,18 @@ if selected_compound == "-- Pilih Senyawa untuk Memulai --":
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("📚 Dataset Gabungan AqSolDB + IUPAC pKa (45 Senyawa)")
-    
-    # Menampilkan DataFrame dengan Judul Kolom 'Compound Name' di Atas Index
-    df_db_preview = pd.DataFrame(AQSOL_IUPAC_DATABASE).T
-    df_db_preview.index.name = "Compound Name"
-    st.dataframe(df_db_preview, use_container_width=True)
+
+    # Menampilkan DataFrame dengan Gambar Struktur 3D per Baris
+    df_db_preview = get_dataframe_with_3d_images(AQSOL_IUPAC_DATABASE)
+    st.dataframe(
+        df_db_preview,
+        column_config={
+            "Structure 3D": st.column_config.ImageColumn(
+                "Structure 3D", help="Gambar Struktur Molekul 3D"
+            ),
+        },
+        use_container_width=True,
+    )
 
 else:
     compound_data = AQSOL_IUPAC_DATABASE[selected_compound]
@@ -586,24 +640,34 @@ else:
         "Atur pH Environment Pelarut:", 1.0, 14.0, 7.4, step=0.1
     )
 
+    # Tampilkan Gambar Struktur Molekul 3D Senyawa Terpilih di Sidebar
+    smiles_encoded = urllib.parse.quote(compound_data.get("Smiles", ""))
+    img_url_3d = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{smiles_encoded}/PNG?record_type=3d"
+
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("📷 Struktur Molekul 3D")
+    st.sidebar.image(
+        img_url_3d, caption=f"{selected_compound} (3D)", width=220
+    )
+
     st.sidebar.markdown("---")
     st.sidebar.subheader("📄 Physical Descriptors")
-    st.sidebar.text(f"SMILES: {compound_data.get('smiles', 'N/A')}")
+    st.sidebar.text(f"Smiles: {compound_data.get('Smiles', 'N/A')}")
     st.sidebar.text(f"Group: {compound_data.get('Group', 'N/A')}")
     st.sidebar.text(f"MolLogP: {compound_data.get('MolLogP', 'N/A')}")
-    st.sidebar.text(f"Solubility (log): {compound_data.get('Solubility', 'N/A')}")
+    st.sidebar.text(f"Log S0: {compound_data.get('Log S0', 'N/A')}")
 
     # Jalankan Engine Inferensi
     S_total, category, cat_color, rule_logs = forward_chaining_engine(
         compound_data, target_pH
     )
 
-    # Display KPI Cards Berwarna
+    # Display KPI Cards Berwarna (dengan Satuan mol/L)
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(
             f"""<div class="metric-card"><div class="metric-label">TOTAL KELARUTAN</div>
-            <div class="metric-value">{S_total:.3f} <span style="font-size:12px">mg/mL</span></div></div>""",
+            <div class="metric-value">{S_total:.4f} <span style="font-size:12px">mol/L</span></div></div>""",
             unsafe_allow_html=True,
         )
     with col2:
@@ -678,13 +742,13 @@ else:
                 mode="markers+text",
                 name=f"State Saat Ini (pH {target_pH})",
                 marker=dict(color="#dc2626", size=12, symbol="diamond"),
-                text=[f"  {S_total:.2f} mg/mL"],
+                text=[f"  {S_total:.4f} mol/L"],
                 textposition="top right",
                 textfont=dict(color="#1e3a8a", size=13),
             )
         )
 
-        # Pengaturan Kontras Warna Teks & Sumbu
+        # Pengaturan Kontras Warna Teks & Sumbu (Satuan mol/L)
         fig.update_layout(
             template="plotly_white",
             paper_bgcolor="#ffffff",
@@ -698,7 +762,7 @@ else:
                 linecolor="#94a3b8",
             ),
             yaxis=dict(
-                title="<b>Total Kelarutan (mg/mL) - Skala Log</b>",
+                title="<b>Total Kelarutan (mol/L) - Skala Log</b>",
                 title_font=dict(color="#1e3a8a", size=14),
                 tickfont=dict(color="#0f172a", size=12),
                 gridcolor="#cbd5e1",
@@ -718,6 +782,13 @@ else:
 
     with tab3:
         st.subheader("Data AqSolDB + IUPAC Joined Table")
-        df_db = pd.DataFrame(AQSOL_IUPAC_DATABASE).T
-        df_db.index.name = "Compound Name"
-        st.dataframe(df_db, use_container_width=True)
+        df_db = get_dataframe_with_3d_images(AQSOL_IUPAC_DATABASE)
+        st.dataframe(
+            df_db,
+            column_config={
+                "Structure 3D": st.column_config.ImageColumn(
+                    "Structure 3D", help="Gambar Struktur Molekul 3D"
+                ),
+            },
+            use_container_width=True,
+        )
