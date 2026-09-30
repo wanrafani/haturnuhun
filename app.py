@@ -432,7 +432,7 @@ AQSOL_IUPAC_DATABASE = {
 
 
 # =========================================================
-# HELPER: INTERACTIVE 3D BALL & STICK VIEWER (CUSTOM SCALE)
+# HELPER: INTERACTIVE 3D VIEWER IN SIDEBAR (3Dmol.js)
 # =========================================================
 def render_3dmol_viewer(smiles_str, height=270):
     encoded_smiles = urllib.parse.quote(str(smiles_str))
@@ -458,7 +458,7 @@ def render_3dmol_viewer(smiles_str, height=270):
             let viewer = $3Dmol.createViewer(container, {{backgroundColor: 'white'}});
             viewer.addModel(data, "sdf");
             
-            // Penyesuaian Gaya: Stick Ramping (0.07) & Sphere Besar (0.38)
+            // Gaya 3D: Stick Ramping (0.07) & Sphere Besar (0.38)
             viewer.setStyle({{}}, {{
                 stick: {{radius: 0.07, colorscheme: "Jmol"}},
                 sphere: {{scale: 0.38, colorscheme: "Jmol"}}
@@ -467,7 +467,7 @@ def render_3dmol_viewer(smiles_str, height=270):
             viewer.render();
           }})
           .catch(err => {{
-            container.innerHTML = '<img src="{fallback_img}" style="width:100%; height:auto; border-radius:8px;" alt="3D Structure Ball and Stick"/>';
+            container.innerHTML = '<img src="{fallback_img}" style="width:100%; height:auto; border-radius:8px;" alt="3D Structure"/>';
           }});
       </script>
     </body>
@@ -476,16 +476,10 @@ def render_3dmol_viewer(smiles_str, height=270):
     components.html(html_code, height=height + 15)
 
 
-def get_dataframe_with_3d_images(db_dict):
+def get_clean_dataframe(db_dict):
     df = pd.DataFrame(db_dict).T
     df.index.name = "Compound Name"
-
-    # URL Gambar PNG 3D Ball & Stick PubChem REST API
-    df["Structure 3D"] = df["Smiles"].apply(
-        lambda s: f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{urllib.parse.quote(str(s))}/PNG?record_type=3d&image_size=300x300"
-    )
-
-    cols = ["Structure 3D", "Smiles", "Group", "pKa1", "Log S0", "MolLogP"]
+    cols = ["Smiles", "Group", "pKa1", "Log S0", "MolLogP"]
     return df[cols]
 
 
@@ -585,8 +579,10 @@ def forward_chaining_engine(data, target_pH):
         S_total = S0 * (1 + 10 ** (target_pH - pKa1))
 
     else:
+        # Poin Revisi Foto 2: Menyertakan kondisi pKa1 > 14 secara eksplisit
+        pka_cond = f"DAN pKa1 ({pKa1}) > 14" if pKa1 is not None else ""
         logs.append(
-            f"🔹 [RULE NETRAL / HIGH pKa FIRED] IF Group == '{group}' (pKa1 = {pKa1}) → Tidak terionisasi signifikan pada pH normal."
+            f"🔹 [RULE NETRAL / HIGH pKa FIRED] IF Group == '{group}' {pka_cond} → Tidak terionisasi signifikan pada pH normal."
         )
         S_total = S0
 
@@ -664,18 +660,9 @@ if selected_compound == "-- Pilih Senyawa untuk Memulai --":
     st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("📚 Dataset Gabungan AqSolDB + IUPAC pKa (45 Senyawa)")
 
-    # Menampilkan DataFrame dengan Gambar Structure 3D Ball & Stick
-    df_db_preview = get_dataframe_with_3d_images(AQSOL_IUPAC_DATABASE)
-    st.dataframe(
-        df_db_preview,
-        column_config={
-            "Structure 3D": st.column_config.ImageColumn(
-                "Structure 3D (Ball & Stick)",
-                help="Gambar Structure 3D Ball & Stick PubChem",
-            ),
-        },
-        use_container_width=True,
-    )
+    # Poin Revisi Foto 1: Menampilkan Tabel tanpa Kolom Structure 3D
+    df_db_preview = get_clean_dataframe(AQSOL_IUPAC_DATABASE)
+    st.dataframe(df_db_preview, use_container_width=True)
 
 else:
     compound_data = AQSOL_IUPAC_DATABASE[selected_compound]
@@ -685,9 +672,9 @@ else:
         "Atur pH Environment Pelarut:", 1.0, 14.0, 7.4, step=0.1
     )
 
-    # Visualisasi Interaktif 3D Ball and Stick di Sidebar
+    # Poin Revisi Foto 3: Subheader diubah menjadi "📷 Visualisasi 3D"
     st.sidebar.markdown("---")
-    st.sidebar.subheader("📷 Visualisasi 3D (Bola Besar & Stik Ramping)")
+    st.sidebar.subheader("📷 Visualisasi 3D")
     st.sidebar.caption("💡 *Klik & geser untuk memutar atau memperbesar molekul*")
     render_3dmol_viewer(compound_data.get("Smiles", ""), height=250)
 
@@ -823,14 +810,6 @@ else:
 
     with tab3:
         st.subheader("Data AqSolDB + IUPAC Joined Table")
-        df_db = get_dataframe_with_3d_images(AQSOL_IUPAC_DATABASE)
-        st.dataframe(
-            df_db,
-            column_config={
-                "Structure 3D": st.column_config.ImageColumn(
-                    "Structure 3D (Ball & Stick)",
-                    help="Gambar Structure 3D Ball & Stick PubChem",
-                ),
-            },
-            use_container_width=True,
-        )
+        # Poin Revisi Foto 1: Menampilkan Tabel Bersih tanpa Kolom Gambar 3D
+        df_db = get_clean_dataframe(AQSOL_IUPAC_DATABASE)
+        st.dataframe(df_db, use_container_width=True)
