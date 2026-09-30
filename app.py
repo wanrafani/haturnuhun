@@ -2,7 +2,8 @@ import math
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import streamlit as st 
+import streamlit as st
+
 # ==========================================
 # 1. KONFIGURASI HALAMAN WEB
 # ==========================================
@@ -98,340 +99,431 @@ st.markdown(
 )
 
 # =========================================================
-# DATABASE SENYAWA (45 SENYAWA DARI DATASET TERBARU)
+# DATABASE SENYAWA LENGKAP (45 SENYAWA + SMILES)
 # =========================================================
 AQSOL_IUPAC_DATABASE = {
     # --- ALCOHOL ---
     "butan-1-ol": {
+        "smiles": "CCCCO",
         "type": "Neutral",
         "fg": ["alcohol"],
         "pKa1": 16.1,
+        "pKa2": None,
         "S0": -0.050409,
         "logP": None,
     },
     "benzyl alcohol": {
+        "smiles": "C1=CC=C(C=C1)CO",
         "type": "Neutral",
         "fg": ["alcohol", "aromatic"],
         "pKa1": 15.4,
+        "pKa2": None,
         "S0": -0.4319,
         "logP": None,
     },
     "1-propanol": {
+        "smiles": "CCCO",
         "type": "Neutral",
         "fg": ["alcohol"],
         "pKa1": 16.1,
+        "pKa2": None,
         "S0": 0.62,
         "logP": None,
     },
     "ethylene glycol": {
+        "smiles": "OCCO",
         "type": "Neutral",
         "fg": ["alcohol"],
         "pKa1": 15.4,
+        "pKa2": None,
         "S0": 1.2071,
         "logP": None,
     },
     "2-butanol": {
+        "smiles": "CCC(C)O",
         "type": "Neutral",
         "fg": ["alcohol"],
         "pKa1": 17.6,
+        "pKa2": None,
         "S0": 0.3877,
         "logP": None,
     },
     # --- CARBOXYLIC ACID ---
     "propanoic acid": {
+        "smiles": "CCC(=O)O",
         "type": "Weak Acid",
         "fg": ["carboxylic_acid"],
         "pKa1": 4.86,
+        "pKa2": None,
         "S0": 1.130305,
         "logP": None,
     },
     "acetic acid": {
+        "smiles": "CC(=O)O",
         "type": "Weak Acid",
         "fg": ["carboxylic_acid"],
         "pKa1": 4.73,
+        "pKa2": None,
         "S0": 1.001718,
         "logP": None,
     },
     "benzoic acid": {
+        "smiles": "C1=CC=C(C=C1)C(=O)O",
         "type": "Weak Acid",
         "fg": ["carboxylic_acid", "aromatic"],
         "pKa1": 4.13,
+        "pKa2": None,
         "S0": -1.61993,
         "logP": None,
     },
     "cholic acid": {
+        "smiles": "CC(CCC(=O)O)C1CCC2C1(CCC3C2C(CC4C3(CCC(C4)O)C)O)O",
         "type": "Weak Acid",
         "fg": ["carboxylic_acid", "alcohol"],
         "pKa1": 4.98,
+        "pKa2": None,
         "S0": -3.3682,
         "logP": None,
     },
     "cumic acid": {
+        "smiles": "CC(C)C1=CC=C(C=C1)C(=O)O",
         "type": "Weak Acid",
         "fg": ["carboxylic_acid", "aromatic"],
         "pKa1": 4.34,
+        "pKa2": None,
         "S0": -3.0364,
         "logP": None,
     },
     # --- ETHER ---
     "allyl ether": {
+        "smiles": "C=CCOCC=C",
         "type": "Neutral",
         "fg": ["ether", "alkene"],
         "pKa1": None,
+        "pKa2": None,
         "S0": -0.0206,
         "logP": 1.36,
     },
     "butoxybenzene": {
+        "smiles": "CCCCOC1=CC=CC=C1",
         "type": "Neutral",
         "fg": ["ether", "aromatic"],
         "pKa1": None,
+        "pKa2": None,
         "S0": -3.61325,
         "logP": 3.07,
     },
     "methoxychlor": {
+        "smiles": "COC1=CC=C(C=C1)C(C2=CC=C(C=C2)OC)C(Cl)(Cl)Cl",
         "type": "Neutral",
         "fg": ["ether", "aromatic", "halogen"],
         "pKa1": None,
+        "pKa2": None,
         "S0": -6.5386,
         "logP": 5.78,
     },
     "diethyl ether": {
+        "smiles": "CCOCC",
         "type": "Neutral",
         "fg": ["ether"],
         "pKa1": None,
+        "pKa2": None,
         "S0": -0.0889,
         "logP": 0.89,
     },
     "anisole": {
+        "smiles": "COC1=CC=CC=C1",
         "type": "Neutral",
         "fg": ["ether", "aromatic"],
         "pKa1": None,
+        "pKa2": None,
         "S0": -1.85,
         "logP": 2.11,
     },
-    # --- ESTHER / ESTER ---
+    # --- ESTER ---
     "dimethoate": {
+        "smiles": "CNC(=O)CSP(=S)(OC)OC",
         "type": "Neutral",
         "fg": ["ester", "amide"],
         "pKa1": None,
+        "pKa2": None,
         "S0": -0.9624,
         "logP": -0.08,
     },
     "cycloate": {
+        "smiles": "CCN(C1CCCCC1)C(=O)SCC",
         "type": "Neutral",
         "fg": ["ester"],
         "pKa1": None,
+        "pKa2": None,
         "S0": -3.4037,
         "logP": 3.11,
     },
     "fenthoate": {
+        "smiles": "CCOC(=O)C(C1=CC=CC=C1)SP(=S)(OC)OC",
         "type": "Neutral",
         "fg": ["ester"],
         "pKa1": None,
+        "pKa2": None,
         "S0": -4.4643,
         "logP": 3.68,
     },
     "ethyl acetate": {
+        "smiles": "CCOC(C)=O",
         "type": "Neutral",
         "fg": ["ester"],
         "pKa1": None,
+        "pKa2": None,
         "S0": -0.025404,
         "logP": 0.73,
     },
     "methyl benzoate": {
+        "smiles": "COC(=O)C1=CC=CC=C1",
         "type": "Neutral",
         "fg": ["ester", "aromatic"],
         "pKa1": None,
+        "pKa2": None,
         "S0": -1.811798,
         "logP": 2.12,
     },
     # --- ALDEHYDE ---
     "formaldehyde": {
+        "smiles": "C=O",
         "type": "Neutral",
         "fg": ["aldehyde"],
         "pKa1": 12.2,
+        "pKa2": None,
         "S0": 1.1206,
         "logP": None,
     },
     "acetaldehyde": {
+        "smiles": "CC=O",
         "type": "Neutral",
         "fg": ["aldehyde"],
         "pKa1": 13.57,
+        "pKa2": None,
         "S0": 1.3561,
         "logP": None,
     },
     "benzaldehyde": {
+        "smiles": "C1=CC=C(C=C1)C=O",
         "type": "Neutral",
         "fg": ["aldehyde", "aromatic"],
         "pKa1": 14.9,
+        "pKa2": None,
         "S0": -1.209572,
         "logP": None,
     },
     "4-methylbenzaldehyde": {
+        "smiles": "CC1=CC=C(C=C1)C=O",
         "type": "Neutral",
         "fg": ["aldehyde", "aromatic"],
         "pKa1": 15.39,
+        "pKa2": None,
         "S0": -1.723702,
         "logP": None,
     },
     "2,2,2-trichloroacetaldehyde": {
+        "smiles": "C(=O)C(Cl)(Cl)Cl",
         "type": "Neutral",
         "fg": ["aldehyde", "halogen"],
         "pKa1": 9.95,
+        "pKa2": None,
         "S0": -0.691341,
         "logP": None,
     },
     # --- KETONE ---
     "cyclohexanone": {
+        "smiles": "O=C1CCCCC1",
         "type": "Neutral",
         "fg": ["ketone"],
         "pKa1": 16.7,
+        "pKa2": None,
         "S0": -0.05737,
         "logP": None,
     },
     "4-methylpent-3-en-2-one": {
+        "smiles": "CC(=CC(=O)C)C",
         "type": "Neutral",
         "fg": ["ketone", "alkene"],
         "pKa1": 20.5,
+        "pKa2": None,
         "S0": -0.56,
         "logP": None,
     },
     "1-methylpyrrolidin-2-one": {
+        "smiles": "CN1CCCC1=O",
         "type": "Neutral",
         "fg": ["ketone", "amide"],
         "pKa1": 24.0,
+        "pKa2": None,
         "S0": 1.00,
         "logP": None,
     },
     "acetone": {
+        "smiles": "CC(=O)C",
         "type": "Neutral",
         "fg": ["ketone"],
         "pKa1": 20.0,
+        "pKa2": None,
         "S0": 1.236,
         "logP": None,
     },
     "1-phenylethan-1-one": {
+        "smiles": "CC(=O)C1=CC=CC=C1",
         "type": "Neutral",
         "fg": ["ketone", "aromatic"],
         "pKa1": 19.2,
+        "pKa2": None,
         "S0": -1.280387,
         "logP": None,
     },
     # --- AMINE ---
     "ethylamine": {
+        "smiles": "CCN",
         "type": "Weak Base",
         "fg": ["amine"],
         "pKa1": 10.79,
+        "pKa2": None,
         "S0": 1.346,
         "logP": None,
     },
     "hexylamine": {
+        "smiles": "CCCCCCN",
         "type": "Weak Base",
         "fg": ["amine"],
         "pKa1": 10.56,
+        "pKa2": None,
         "S0": -1.1,
         "logP": None,
     },
     "aniline": {
+        "smiles": "C1=CC=C(C=C1)N",
         "type": "Weak Base",
         "fg": ["amine", "aromatic"],
         "pKa1": 4.60,
+        "pKa2": None,
         "S0": -0.425017,
         "logP": None,
     },
     "pyridine": {
+        "smiles": "C1=CC=NC=C1",
         "type": "Weak Base",
         "fg": ["amine", "aromatic"],
         "pKa1": 5.25,
+        "pKa2": None,
         "S0": 0.76,
         "logP": None,
     },
     "benzylamine": {
+        "smiles": "C1=CC=C(C=C1)CN",
         "type": "Weak Base",
         "fg": ["amine", "aromatic"],
         "pKa1": 9.33,
+        "pKa2": None,
         "S0": -1.53,
         "logP": None,
     },
     # --- PHENOL ---
     "phenol": {
+        "smiles": "C1=CC=C(C=C1)O",
         "type": "Phenol",
         "fg": ["phenol", "aromatic"],
         "pKa1": 9.98,
+        "pKa2": None,
         "S0": -0.04,
         "logP": None,
     },
     "4-methylphenol": {
+        "smiles": "CC1=CC=C(C=C1)O",
         "type": "Phenol",
         "fg": ["phenol", "aromatic"],
         "pKa1": 10.26,
+        "pKa2": None,
         "S0": -0.701548,
         "logP": None,
     },
     "o-aminophenol": {
+        "smiles": "C1=CC=C(C(=C1)N)O",
         "type": "Amphoteric",
         "fg": ["phenol", "amine", "aromatic"],
         "pKa1": 9.71,
+        "pKa2": None,
         "S0": -0.7369,
         "logP": None,
     },
     "4-nitrophenol": {
+        "smiles": "C1=CC(=CC=C1O)[N+](=O)[O-]",
         "type": "Phenol",
         "fg": ["phenol", "aromatic", "nitro"],
         "pKa1": 7.15,
+        "pKa2": None,
         "S0": -0.94,
         "logP": None,
     },
     "4-nonylphenol": {
+        "smiles": "CCCCCCCCCC1=CC=C(C=C1)O",
         "type": "Phenol",
         "fg": ["phenol", "aromatic"],
         "pKa1": 10.28,
+        "pKa2": None,
         "S0": -4.498027,
         "logP": None,
     },
     # --- MULTI-FUNCTIONAL / COMPLEX ---
     "amoxicillin": {
+        "smiles": "CC1(C(N2C(S1)C(C2=O)NC(=O)C(C3=CC=C(C=C3)O)N)C(=O)O)C",
         "type": "Amphoteric",
         "fg": ["carboxylic_acid", "amine", "phenol"],
         "pKa1": 2.40,
+        "pKa2": 9.6,
         "S0": -2.17,
         "logP": None,
     },
     "cysteine": {
+        "smiles": "C(C(C(=O)O)N)S",
         "type": "Amphoteric",
         "fg": ["carboxylic_acid", "amine"],
         "pKa1": 1.96,
+        "pKa2": 8.18,
         "S0": 0.3597,
         "logP": None,
     },
     "beta-alanine": {
+        "smiles": "NCCC(=O)O",
         "type": "Amphoteric",
         "fg": ["carboxylic_acid", "amine"],
         "pKa1": 3.55,
+        "pKa2": 10.24,
         "S0": 0.786548,
         "logP": None,
     },
     "3-aminobenzoic acid": {
+        "smiles": "NC1=CC=CC(=C1)C(=O)O",
         "type": "Amphoteric",
         "fg": ["carboxylic_acid", "amine", "aromatic"],
         "pKa1": 3.12,
+        "pKa2": 4.74,
         "S0": -1.3663,
         "logP": None,
     },
     "3-hydroxytyramine": {
+        "smiles": "C1=CC(=C(C=C1CCN)O)O",
         "type": "Amphoteric",
         "fg": ["phenol", "amine", "aromatic"],
         "pKa1": 8.93,
+        "pKa2": 10.6,
         "S0": 0.12,
         "logP": None,
     },
 }
 
+
 # ==========================================
 # 4. HELPER & INFERENCE ENGINE (5 LAPIS)
 # ==========================================
 def is_pure_organic(smiles):
-    if "." in smiles:
+    if not smiles or "." in smiles:
         return False
     metals = ["Na", "K", "Ca", "Mg", "Fe", "Zn", "Li", "Ba"]
     for m in metals:
@@ -439,9 +531,10 @@ def is_pure_organic(smiles):
             return False
     return True
 
+
 def forward_chaining_engine(data, target_pH):
     logs = []
-    smiles = data["smiles"]
+    smiles = data.get("smiles", "")
 
     logs.append(f"⚙️ [INIT] Evaluasi Senyawa: {data.get('name', 'Target')}")
     logs.append(f"   ↳ Structure SMILES: {smiles}")
@@ -452,16 +545,20 @@ def forward_chaining_engine(data, target_pH):
 
     logs.append("✅ [FILTER PASSED] Molekul Organik Murni Terdeteksi.")
 
-    c_type = data["type"]
-    pKa1 = data["pKa1"]
-    pKa2 = data["pKa2"]
-    S0 = data["S0"]
-    fg_list = data["fg"]
+    c_type = data.get("type")
+    pKa1 = data.get("pKa1")
+    pKa2 = data.get("pKa2")
+    
+    # Konversi S0 dari log scale (AqSolDB) ke linear scale
+    S0_log = data.get("S0", 0.0)
+    S0 = 10 ** S0_log if S0_log is not None else 0.0
+    
+    fg_list = data.get("fg", [])
 
     # RULE C: Neutral / Non-Ionizable
     if c_type == "Neutral" or pKa1 is None:
         logs.append(f"🔹 [RULE C FIRED] IF FunctionalGroup ∈ {fg_list} → Non-Ionizable / Independent pH.")
-        logs.append(f"   ↳ Kelarutan ditentukan oleh parameter fisik: LogP={data['logP']}, TPSA={data['tpsa']}.")
+        logs.append(f"   ↳ Kelarutan ditentukan oleh parameter fisik: LogP={data.get('logP', 'N/A')}, TPSA={data.get('tpsa', 'N/A')}.")
         S_total = S0
 
     # RULE B: Asam / Basa Kuat
@@ -482,15 +579,16 @@ def forward_chaining_engine(data, target_pH):
     # RULE E: Senyawa Amfoter / Zwitterion
     elif c_type == "Amphoteric":
         logs.append("🔹 [RULE E FIRED] IF Gugus Amina DAN Asam Karboksilat Ada → Senyawa Amfoter.")
-        pI = (pKa1 + pKa2) / 2
+        pKa2_val = pKa2 if pKa2 is not None else pKa1
+        pI = (pKa1 + pKa2_val) / 2
         logs.append(f"   ↳ Titik Isoelektrik (pI) = {pI:.2f}.")
         if abs(target_pH - pI) < 0.5:
             logs.append(f"   ↳ Pada pH {target_pH} (~pI): Dominan Zwitterion → Kelarutan Minimum.")
         elif target_pH < pKa1:
             logs.append(f"   ↳ Pada pH {target_pH} (< pKa1): Spesies Kationik mendominasi (+1).")
         else:
-            logs.append(f"   ↳ Pada pH {target_pH} (> pKa2): Spesies Anionik mendominasi (-1).")
-        S_total = S0 * (1 + 10 ** (target_pH - pKa2) + 10 ** (pKa1 - target_pH))
+            logs.append(f"   ↳ Pada pH {target_pH} (> pKa2_val): Spesies Anionik mendominasi (-1).")
+        S_total = S0 * (1 + 10 ** (target_pH - pKa2_val) + 10 ** (pKa1 - target_pH))
 
     # RULE A: Asam / Basa Lemah
     elif c_type == "Weak Acid":
@@ -509,6 +607,9 @@ def forward_chaining_engine(data, target_pH):
             logs.append(f"   ↳ pH ({target_pH}) > pKa ({pKa1}) → Bentuk netral B mendominasi.")
         S_total = S0 * (1 + 10 ** (pKa1 - target_pH))
 
+    else:
+        S_total = S0
+
     # USP Classification
     if S_total >= 100.0:
         cat, color = "Very Soluble", "#16a34a"
@@ -525,6 +626,7 @@ def forward_chaining_engine(data, target_pH):
 
     logs.append(f"🏁 [FINAL VERDICT] Kelarutan Total S_total = {S_total:.3f} mg/mL → Kategori: {cat}")
     return S_total, cat, color, logs
+
 
 # ==========================================
 # 5. HEADER UTAMA SOLUBAYES
@@ -588,11 +690,11 @@ else:
 
     st.sidebar.markdown("---")
     st.sidebar.subheader("📄 Physical Descriptors")
-    st.sidebar.text(f"SMILES: {compound_data['smiles']}")
-    st.sidebar.text(f"MolLogP: {compound_data['logP']}")
-    st.sidebar.text(f"TPSA: {compound_data['tpsa']} Å²")
-    st.sidebar.text(f"H-Donors: {compound_data['h_donors']}")
-    st.sidebar.text(f"H-Acceptors: {compound_data['h_acceptors']}")
+    st.sidebar.text(f"SMILES: {compound_data.get('smiles', 'N/A')}")
+    st.sidebar.text(f"MolLogP: {compound_data.get('logP', 'N/A')}")
+    st.sidebar.text(f"TPSA: {compound_data.get('tpsa', 'N/A')} Å²")
+    st.sidebar.text(f"H-Donors: {compound_data.get('h_donors', 'N/A')}")
+    st.sidebar.text(f"H-Acceptors: {compound_data.get('h_acceptors', 'N/A')}")
 
     # Jalankan Engine
     S_total, category, cat_color, rule_logs = forward_chaining_engine(
@@ -610,7 +712,7 @@ else:
     with col2:
         st.markdown(
             f"""<div class="metric-card"><div class="metric-label">TIPE MOLEKUL</div>
-            <div class="metric-value" style="color:#2563eb">{compound_data['type']}</div></div>""",
+            <div class="metric-value" style="color:#2563eb">{compound_data.get('type', 'Unknown')}</div></div>""",
             unsafe_allow_html=True,
         )
     with col3:
@@ -620,7 +722,7 @@ else:
             unsafe_allow_html=True,
         )
     with col4:
-        pka_display = f"{compound_data['pKa1']}" if compound_data["pKa1"] else "N/A"
+        pka_display = f"{compound_data.get('pKa1')}" if compound_data.get("pKa1") is not None else "N/A"
         st.markdown(
             f"""<div class="metric-card"><div class="metric-label">pKa (IUPAC)</div>
             <div class="metric-value" style="color:#d97706">{pka_display}</div></div>""",
@@ -647,7 +749,7 @@ else:
         S_array = [forward_chaining_engine(compound_data, ph)[0] for ph in pH_array]
 
         fig = go.Figure()
-        
+
         # Garis Grafik Utama
         fig.add_trace(
             go.Scatter(
@@ -669,7 +771,7 @@ else:
                 marker=dict(color="#dc2626", size=12, symbol="diamond"),
                 text=[f"  {S_total:.2f} mg/mL"],
                 textposition="top right",
-                textfont=dict(color="#1e3a8a", size=13)
+                textfont=dict(color="#1e3a8a", size=13),
             )
         )
 
@@ -684,7 +786,7 @@ else:
                 title_font=dict(color="#1e3a8a", size=14),
                 tickfont=dict(color="#0f172a", size=12),
                 gridcolor="#cbd5e1",
-                linecolor="#94a3b8"
+                linecolor="#94a3b8",
             ),
             yaxis=dict(
                 title="<b>Total Kelarutan (mg/mL) - Skala Log</b>",
@@ -692,13 +794,13 @@ else:
                 tickfont=dict(color="#0f172a", size=12),
                 gridcolor="#cbd5e1",
                 linecolor="#94a3b8",
-                type="log"
+                type="log",
             ),
             legend=dict(
                 font=dict(color="#0f172a", size=12),
                 bgcolor="rgba(255,255,255,0.9)",
                 bordercolor="#cbd5e1",
-                borderwidth=1
+                borderwidth=1,
             ),
             height=440,
         )
