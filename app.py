@@ -534,7 +534,7 @@ def forward_chaining_engine(data, target_pH):
             "Rejected",
             "#ef4444",
             logs,
-            "Stot < 0.0001 mol/L",
+            "Stot < 0.1 mol/L",
         )
 
     logs.append("✅ [FILTER PASSED] Molekul Organik Murni Terdeteksi.")
@@ -590,25 +590,25 @@ def forward_chaining_engine(data, target_pH):
         )
         S_total = S0
 
-    # KLASIFIKASI KELARUTAN PRESISI (Skala Molaritas Standar mol/L)
-    if S_total >= 1.0:
+    # KLASIFIKASI KELARUTAN DISESUAIKAN PRESISI DENGAN TABEL STANDAR
+    if S_total >= 100.0:
         cat, color = "Sangat Mudah Larut", "#16a34a"
-        range_str = "Stot ≥ 1.0 mol/L"
-    elif S_total >= 0.1:
+        range_str = "Stot ≥ 100.0 mol/L"
+    elif S_total >= 30.0:
         cat, color = "Mudah Larut", "#2563eb"
-        range_str = "0.1 ≤ Stot < 1.0 mol/L"
-    elif S_total >= 0.01:
+        range_str = "30.0 ≤ Stot < 100.0 mol/L"
+    elif S_total >= 10.0:
         cat, color = "Larut", "#0284c7"
-        range_str = "0.01 ≤ Stot < 0.1 mol/L"
-    elif S_total >= 0.001:
+        range_str = "10.0 ≤ Stot < 30.0 mol/L"
+    elif S_total >= 1.0:
         cat, color = "Agak Sukar Larut", "#d97706"
-        range_str = "0.001 ≤ Stot < 0.01 mol/L"
-    elif S_total >= 0.0001:
+        range_str = "1.0 ≤ Stot < 10.0 mol/L"
+    elif S_total >= 0.1:
         cat, color = "Sukar Larut", "#dc2626"
-        range_str = "0.0001 ≤ Stot < 0.001 mol/L"
+        range_str = "0.1 ≤ Stot < 1.0 mol/L"
     else:
         cat, color = "Praktis Tidak Larut", "#991b1b"
-        range_str = "Stot < 0.0001 mol/L"
+        range_str = "Stot < 0.1 mol/L"
 
     logs.append(
         f"🏁 [FINAL VERDICT] Total Kelarutan Stot = {S_total:.4f} mol/L → Kategori: {cat} ({range_str})"
