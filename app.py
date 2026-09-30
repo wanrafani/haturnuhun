@@ -660,7 +660,7 @@ def forward_chaining_engine(data, target_pH):
         cat, color = "Praktis Tidak Larut", "#991b1b"
 
     logs.append(
-        f"🏁 [FINAL VERDICT] Kelarutan Total (S0/Stot) = {S_total:.4f} mol/L → Tingkat Kelarutan: {cat}"
+        f"🏁 [FINAL VERDICT] Kelarutan Total Stot = {S_total:.4f} mol/L → Tingkat Kelarutan: {cat}"
     )
     return S_total, cat, color, logs
 
@@ -681,7 +681,7 @@ st.markdown(
 # ==========================================
 # 6. SIDEBAR INPUT & INTERAKSI HALAMAN
 # ==========================================
-st.sidebar.header("⚙️️ Menu Navigasi & Input")
+st.sidebar.header("⚙ Menu Navigasi & Input")
 
 compound_options = ["-- Pilih Senyawa untuk Memulai --"] + list(
     AQSOL_IUPAC_DATABASE.keys()
@@ -747,7 +747,7 @@ else:
         compound_data, target_pH
     )
 
-    # Display KPI Cards Berwarna (Kartu Metrik 1 diubah labelnya jadi S0)
+    # Display KPI Cards Berwarna (Metrik 1 = S0, Metrik 3 = TINGKAT KELARUTAN + Nilai Stot)
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(
@@ -764,7 +764,8 @@ else:
     with col3:
         st.markdown(
             f"""<div class="metric-card"><div class="metric-label">TINGKAT KELARUTAN</div>
-            <div class="metric-value" style="color:{cat_color}; font-size:18px">{category}</div></div>""",
+            <div class="metric-value" style="color:{cat_color}; font-size:18px">{category}</div>
+            <div style="font-size:13px; color:#475569; font-weight:700; margin-top:4px;">(Stot = {S_total:.4f} mol/L)</div></div>""",
             unsafe_allow_html=True,
         )
     with col4:
@@ -792,24 +793,6 @@ else:
         st.subheader("Explainable AI: Rule Execution Log")
         st.info(
             "Alur aturan (*Forward Chaining Rules*) yang dieksekusi secara transparan berdasarkan sifat fisikokimia molekul:"
-        )
-
-        # Penjelasan Acuan Tingkat Kelarutan (Standar USP)
-        st.markdown(
-            """
-            <div style="background-color:#ffffff; border:1px solid #e2e8f0; padding:14px; border-radius:8px; margin-bottom:16px;">
-                <b style="color:#1e3a8a;">📖 Kriteria Klasifikasi Tingkat Kelarutan (Standar USP / Farmakope):</b>
-                <ul style="font-size:13px; color:#334155; margin-top:6px; margin-bottom:0px;">
-                    <li><b>Sangat Mudah Larut</b> : S ≥ 100 mol/L</li>
-                    <li><b>Mudah Larut</b> : 30 ≤ S < 100 mol/L</li>
-                    <li><b>Larut</b> : 10 ≤ S < 30 mol/L</li>
-                    <li><b>Agak Sukar Larut</b> : 1.0 ≤ S < 10 mol/L</li>
-                    <li><b>Sukar Larut</b> : 0.1 ≤ S < 1.0 mol/L <i>(Contoh: Butan-1-ol S0 = 0.8904 mol/L)</i></li>
-                    <li><b>Praktis Tidak Larut</b> : S < 0.1 mol/L</li>
-                </ul>
-            </div>
-            """,
-            unsafe_allow_html=True,
         )
 
         for log in rule_logs:
