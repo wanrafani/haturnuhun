@@ -17,21 +17,19 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. CUSTOM CSS: TEMA BIRU - PUTIH (ELEGANT LIGHT THEME)
+# 2. CUSTOM CSS: TEMA ELEGAN
 # ==========================================
 st.markdown(
     """
     <style>
-    /* Latar Belakang Utama */
     .stApp {
         background-color: #f8fafc;
         color: #0f172a;
     }
     
-    /* Header Utama SoluChain */
     .main-header {
         background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
-        padding: 28px;
+        padding: 24px;
         border-radius: 12px;
         color: #ffffff;
         margin-bottom: 24px;
@@ -39,18 +37,17 @@ st.markdown(
     }
     .main-header h1 {
         color: #ffffff;
-        font-size: 2.5rem;
+        font-size: 2.2rem;
         font-weight: 800;
         margin: 0;
     }
     .main-header p {
         color: #dbeafe;
-        font-size: 1.05rem;
-        margin-top: 6px;
+        font-size: 1rem;
+        margin-top: 4px;
         margin-bottom: 0;
     }
 
-    /* Kartu Metrik KPI */
     .metric-card {
         background-color: #ffffff;
         border: 1px solid #cbd5e1;
@@ -59,21 +56,38 @@ st.markdown(
         border-radius: 10px;
         text-align: center;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        min-height: 120px;
     }
     .metric-value { 
-        font-size: 20px; 
+        font-size: 18px; 
         font-weight: 800; 
         color: #1e3a8a; 
     }
     .metric-label { 
-        font-size: 12px; 
+        font-size: 11px; 
         color: #64748b; 
-        font-weight: 600;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+    .metric-sub {
+        font-size: 12px;
+        color: #475569;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+    .metric-range {
+        font-size: 11px;
+        color: #0369a1;
+        font-weight: 700;
+        margin-top: 2px;
+        background-color: #f0f9ff;
+        padding: 2px 6px;
+        border-radius: 4px;
+        display: inline-block;
     }
 
-    /* Kotak Log Inferensi */
     .rule-box {
         background-color: #eff6ff;
         border-left: 4px solid #2563eb;
@@ -86,7 +100,6 @@ st.markdown(
         box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
 
-    /* Hero Banner Landing Page */
     .hero-card {
         background-color: #ffffff;
         border: 2px dashed #93c5fd;
@@ -483,7 +496,7 @@ def get_clean_dataframe(db_dict):
 
 
 # ==========================================
-# 4. HELPER & INFERENCE ENGINE (FORWARD CHAINING)
+# 4. ENGINE INFERENSI FORWARD CHAINING
 # ==========================================
 def is_pure_organic(smiles):
     if not smiles or "." in smiles:
@@ -503,7 +516,6 @@ def forward_chaining_engine(data, target_pH):
     mollogp = data.get("MolLogP")
     sol_log = data.get("Log S0", 0.0)
 
-    # Konversi Log S0 (skala log mol/L) ke S0 (skala linear mol/L)
     S0 = 10**sol_log if sol_log is not None else 0.0
     smiles = data.get("Smiles", "")
 
@@ -522,33 +534,17 @@ def forward_chaining_engine(data, target_pH):
             "Rejected",
             "#ef4444",
             logs,
-            "-",
-            "Molekul ditolak oleh filter.",
+            "Stot < 0.0001 mol/L",
         )
 
     logs.append("✅ [FILTER PASSED] Molekul Organik Murni Terdeteksi.")
 
-    formula_str = ""
-    calc_steps_str = ""
-
-    # Rule Execution berdasarkan pKa1, MolLogP, dan Group
+    # Executing Forward Chaining Rules
     if pKa1 is None:
         logs.append(
             f"🔹 [RULE JALUR LIPOFILISITAS FIRED] pKa1 = None → Evaluasi berbasis MolLogP ({mollogp})."
         )
         S_total = S0
-        formula_str = r"S_{tot} = S_0"
-        calc_steps_str = f"Karena tidak memiliki pKa1 terionisasi, nilai kelarutan total sama dengan kelarutan intrinsik netral:\n\n$$S_{{tot}} = S_0 = 10^{{{sol_log:.4f}}} = {S0:.4f} \\text{{ mol/L}}$$"
-
-        if mollogp is not None and mollogp < 0.0:
-            logs.append("   ↳ MolLogP < 0.0 → Kelarutan bawaan Tinggi.")
-        elif mollogp is not None and mollogp <= 2.0:
-            logs.append("   ↳ 0.0 <= MolLogP <= 2.0 → Kelarutan bawaan Sedang.")
-        else:
-            logs.append(
-                "   ↳ MolLogP > 2.0 → Kelarutan bawaan Rendah (Lipofilik)."
-            )
-
     elif group == "Carboxylic Acid" or (
         group == "Multi-functional" and pKa1 < 7
     ):
@@ -558,23 +554,14 @@ def forward_chaining_engine(data, target_pH):
         exponent = target_pH - pKa1
         ion_factor = 10**exponent
         S_total = S0 * (1 + ion_factor)
-
-        formula_str = r"S_{tot} = S_0 \times \left(1 + 10^{\text{pH} - \text{pKa}_1}\right)"
-        calc_steps_str = (
-            f"1. **Kelarutan Intrinsik ($S_0$):** $10^{{{sol_log:.4f}}} = {S0:.6f}\\text{{ mol/L}}$\n"
-            f"2. **Faktor Ionisasi:** $10^{{\\text{{pH}} - \\text{{pKa}}_1}} = 10^{{{target_pH:.1f} - {pKa1:.2f}}} = 10^{{{exponent:.2f}}} = {ion_factor:.4f}$\n"
-            f"3. **Total Kelarutan:** $S_{{tot}} = {S0:.6f} \\times (1 + {ion_factor:.4f}) = {S_total:.4f}\\text{{ mol/L}}$"
-        )
-
         if target_pH > pKa1:
             logs.append(
-                f"   ↳ pH ({target_pH}) > pKa1 ({pKa1}) → Form terionisasi (A-) mendominasi → Kelarutan Meningkat."
+                f"   ↳ pH ({target_pH}) > pKa1 ({pKa1}) → Form terionisasi (A-) mendominasi → Kelarutan Meningkat Signifikan."
             )
         else:
             logs.append(
                 f"   ↳ pH ({target_pH}) <= pKa1 ({pKa1}) → Form netral HA mendominasi."
             )
-
     elif group == "Amine":
         logs.append(
             f"🔹 [RULE BASA LEMAH FIRED] IF Group == 'Amine' DAN pKa1 ({pKa1}) DAN pH ({target_pH})"
@@ -582,14 +569,6 @@ def forward_chaining_engine(data, target_pH):
         exponent = pKa1 - target_pH
         ion_factor = 10**exponent
         S_total = S0 * (1 + ion_factor)
-
-        formula_str = r"S_{tot} = S_0 \times \left(1 + 10^{\text{pKa}_1 - \text{pH}}\right)"
-        calc_steps_str = (
-            f"1. **Kelarutan Intrinsik ($S_0$):** $10^{{{sol_log:.4f}}} = {S0:.6f}\\text{{ mol/L}}$\n"
-            f"2. **Faktor Ionisasi:** $10^{{\\text{{pKa}}_1 - \\text{{pH}}}} = 10^{{{pKa1:.2f} - {target_pH:.1f}}} = 10^{{{exponent:.2f}}} = {ion_factor:.4f}$\n"
-            f"3. **Total Kelarutan:** $S_{{tot}} = {S0:.6f} \\times (1 + {ion_factor:.4f}) = {S_total:.4f}\\text{{ mol/L}}$"
-        )
-
         if target_pH < pKa1:
             logs.append(
                 f"   ↳ pH ({target_pH}) < pKa1 ({pKa1}) → Terprotonasi (BH+) mendominasi → Kelarutan Meningkat."
@@ -598,7 +577,6 @@ def forward_chaining_engine(data, target_pH):
             logs.append(
                 f"   ↳ pH ({target_pH}) >= pKa1 ({pKa1}) → Form netral B mendominasi."
             )
-
     elif group == "Phenol":
         logs.append(
             f"🔹 [RULE FENOL FIRED] IF Group == 'Phenol' DAN pKa1 ({pKa1}) DAN pH ({target_pH})"
@@ -606,50 +584,36 @@ def forward_chaining_engine(data, target_pH):
         exponent = target_pH - pKa1
         ion_factor = 10**exponent
         S_total = S0 * (1 + ion_factor)
-
-        formula_str = r"S_{tot} = S_0 \times \left(1 + 10^{\text{pH} - \text{pKa}_1}\right)"
-        calc_steps_str = (
-            f"1. **Kelarutan Intrinsik ($S_0$):** $10^{{{sol_log:.4f}}} = {S0:.6f}\\text{{ mol/L}}$\n"
-            f"2. **Faktor Ionisasi:** $10^{{\\text{{pH}} - \\text{{pKa}}_1}} = 10^{{{target_pH:.1f} - {pKa1:.2f}}} = 10^{{{exponent:.2f}}} = {ion_factor:.4f}$\n"
-            f"3. **Total Kelarutan:** $S_{{tot}} = {S0:.6f} \\times (1 + {ion_factor:.4f}) = {S_total:.4f}\\text{{ mol/L}}$"
-        )
-
-        if target_pH > pKa1:
-            logs.append(
-                f"   ↳ pH ({target_pH}) > pKa1 ({pKa1}) → Anion fenolat terbentuk → Kelarutan Meningkat."
-            )
-        else:
-            logs.append(
-                f"   ↳ pH ({target_pH}) <= pKa1 ({pKa1}) → Bentuk netral mendominasi."
-            )
-
     else:
-        pka_cond = f"DAN pKa1 ({pKa1}) > 14" if pKa1 is not None else ""
         logs.append(
-            f"🔹 [RULE NETRAL / HIGH pKa FIRED] IF Group == '{group}' {pka_cond} → Tidak terionisasi signifikan pada pH normal."
+            f"🔹 [RULE NETRAL FIRED] IF Group == '{group}' → Tidak terionisasi signifikan pada pH normal."
         )
         S_total = S0
-        formula_str = r"S_{tot} = S_0"
-        calc_steps_str = f"Senyawa tergolong netral pada rentang pH normal, sehingga:\n\n$$S_{{tot}} = S_0 = 10^{{{sol_log:.4f}}} = {S0:.4f} \\text{{ mol/L}}$$"
 
-    # Klasifikasi Tingkat Kelarutan (Skala Standard USP)
-    if S_total >= 100.0:
+    # KLASIFIKASI KELARUTAN PRESISI (Skala Molaritas Standar mol/L)
+    if S_total >= 1.0:
         cat, color = "Sangat Mudah Larut", "#16a34a"
-    elif S_total >= 30.0:
-        cat, color = "Mudah Larut", "#65a30d"
-    elif S_total >= 10.0:
-        cat, color = "Larut", "#d97706"
-    elif S_total >= 1.0:
-        cat, color = "Agak Sukar Larut", "#ea580c"
+        range_str = "Stot ≥ 1.0 mol/L"
     elif S_total >= 0.1:
+        cat, color = "Mudah Larut", "#2563eb"
+        range_str = "0.1 ≤ Stot < 1.0 mol/L"
+    elif S_total >= 0.01:
+        cat, color = "Larut", "#0284c7"
+        range_str = "0.01 ≤ Stot < 0.1 mol/L"
+    elif S_total >= 0.001:
+        cat, color = "Agak Sukar Larut", "#d97706"
+        range_str = "0.001 ≤ Stot < 0.01 mol/L"
+    elif S_total >= 0.0001:
         cat, color = "Sukar Larut", "#dc2626"
+        range_str = "0.0001 ≤ Stot < 0.001 mol/L"
     else:
         cat, color = "Praktis Tidak Larut", "#991b1b"
+        range_str = "Stot < 0.0001 mol/L"
 
     logs.append(
-        f"🏁 [FINAL VERDICT] Kelarutan Total Stot = {S_total:.4f} mol/L → Tingkat Kelarutan: {cat}"
+        f"🏁 [FINAL VERDICT] Total Kelarutan Stot = {S_total:.4f} mol/L → Kategori: {cat} ({range_str})"
     )
-    return S0, S_total, cat, color, logs, formula_str, calc_steps_str
+    return S0, S_total, cat, color, logs, range_str
 
 
 # ==========================================
@@ -666,7 +630,7 @@ st.markdown(
 )
 
 # ==========================================
-# 6. SIDEBAR INPUT & INTERAKSI HALAMAN
+# 6. SIDEBAR INPUT
 # ==========================================
 st.sidebar.header("⚙ Menu Navigasi & Input")
 
@@ -678,7 +642,7 @@ selected_compound = st.sidebar.selectbox(
 )
 
 # ==========================================
-# 7. LOGIKA TAMPILAN: LANDING PAGE vs ANALISIS SENYAWA
+# 7. LOGIKA TAMPILAN PAGE
 # ==========================================
 if selected_compound == "-- Pilih Senyawa untuk Memulai --":
     st.markdown(
@@ -705,9 +669,9 @@ if selected_compound == "-- Pilih Senyawa untuk Memulai --":
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("📚 Dataset Gabungan AqSolDB + IUPAC pKa (45 Senyawa)")
-
-    df_db_preview = get_clean_dataframe(AQSOL_IUPAC_DATABASE)
-    st.dataframe(df_db_preview, use_container_width=True)
+    st.dataframe(
+        get_clean_dataframe(AQSOL_IUPAC_DATABASE), use_container_width=True
+    )
 
 else:
     compound_data = AQSOL_IUPAC_DATABASE[selected_compound]
@@ -731,97 +695,57 @@ else:
     st.sidebar.text(f"MolLogP: {compound_data.get('MolLogP', 'N/A')}")
     st.sidebar.text(f"Log S0: {compound_data.get('Log S0', 'N/A')}")
 
-    # Jalankan Engine Inferensi
-    (
-        S0_val,
-        S_total,
-        category,
-        cat_color,
-        rule_logs,
-        formula_str,
-        calc_steps_str,
-    ) = forward_chaining_engine(compound_data, target_pH)
+    # Run Forward Chaining Engine
+    S0_val, S_total, category, cat_color, rule_logs, range_str = (
+        forward_chaining_engine(compound_data, target_pH)
+    )
 
-    # Display KPI Cards Berwarna
+    # Display Metric Cards (Rentang S_tot Ditaruh Langsung Di Bawah Kategori)
     col1, col2, col3, col4 = st.columns(4)
+
     with col1:
         st.markdown(
-            f"""<div class="metric-card"><div class="metric-label">S0 (Intrinsik)</div>
-            <div class="metric-value">{S0_val:.4f} <span style="font-size:12px">mol/L</span></div></div>""",
+            f"""<div class="metric-card">
+                <div class="metric-label">S0 (INTRINSIK)</div>
+                <div class="metric-value">{S0_val:.6f} <span style="font-size:12px">mol/L</span></div>
+            </div>""",
             unsafe_allow_html=True,
         )
+
     with col2:
         st.markdown(
-            f"""<div class="metric-card"><div class="metric-label">GUGUS FUNGSI (GROUP)</div>
-            <div class="metric-value" style="color:#2563eb">{compound_data.get('Group', 'Unknown')}</div></div>""",
+            f"""<div class="metric-card">
+                <div class="metric-label">GUGUS FUNGSI</div>
+                <div class="metric-value" style="color:#2563eb">{compound_data.get('Group', 'Unknown')}</div>
+            </div>""",
             unsafe_allow_html=True,
         )
+
     with col3:
         st.markdown(
-            f"""<div class="metric-card"><div class="metric-label">TINGKAT KELARUTAN</div>
-            <div class="metric-value" style="color:{cat_color}; font-size:18px">{category}</div>
-            <div style="font-size:13px; color:#475569; font-weight:700; margin-top:4px;">(Stot = {S_total:.4f} mol/L)</div></div>""",
+            f"""<div class="metric-card">
+                <div class="metric-label">TINGKAT KELARUTAN</div>
+                <div class="metric-value" style="color:{cat_color}; font-size:17px">{category}</div>
+                <div class="metric-sub">Stot = {S_total:.4f} mol/L</div>
+                <div class="metric-range">({range_str})</div>
+            </div>""",
             unsafe_allow_html=True,
         )
+
     with col4:
         pka1_val = compound_data.get("pKa1")
         pka_display = f"{pka1_val}" if pka1_val is not None else "N/A"
-
         st.markdown(
-            f"""<div class="metric-card"><div class="metric-label">pKa1 (IUPAC)</div>
-            <div class="metric-value" style="color:#d97706">{pka_display}</div></div>""",
+            f"""<div class="metric-card">
+                <div class="metric-label">pKa1 (IUPAC)</div>
+                <div class="metric-value" style="color:#d97706">{pka_display}</div>
+            </div>""",
             unsafe_allow_html=True,
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # =============================================================
-    # SEKSI PENJELASAN KHUSUS STOT & RANGE KELARUTAN
-    # =============================================================
-    with st.expander(
-        "📌 **Penjelasan Detail: Perhitungan $S_{tot}$ & Ambang Batas Range Kelarutan**",
-        expanded=True,
-    ):
-        col_exp1, col_exp2 = st.columns([1.1, 1.0])
-
-        with col_exp1:
-            st.markdown("### 🧮 1. Kenapa Nilai $S_{tot}$ Didapat Segitu?")
-            st.markdown(
-                f"Gugus fungsi senyawa ini adalah **{compound_data.get('Group')}** dengan pH pelarut **{target_pH}**."
-            )
-            st.markdown("**Rumus Henderson-Hasselbalch yang Digunakan:**")
-            st.latex(formula_str)
-            st.markdown("**Langkah Perhitungan Sederhana:**")
-            st.markdown(calc_steps_str)
-
-        with col_exp2:
-            st.markdown("### 📊 2. Standar Range Kelarutan (Skala USP)")
-            st.markdown(
-                "Penentuan kategori berdasarkan batas konsentrasi total $S_{tot}$ ($\text{mol/L}$):"
-            )
-
-            is_vsol = S_total >= 100.0
-            is_fsol = 30.0 <= S_total < 100.0
-            is_sol = 10.0 <= S_total < 30.0
-            is_ssol = 1.0 <= S_total < 10.0
-            is_slsol = 0.1 <= S_total < 1.0
-            is_insol = S_total < 0.1
-
-            table_md = f"""
-            | Tingkat Kelarutan | Rentang $S_{{tot}}$ (mol/L) | Status Senyawa Ini |
-            | :--- | :--- | :---: |
-            | **Sangat Mudah Larut** | $S_{{tot}} \\ge 100.0$ | {'🟢 **AKTIF**' if is_vsol else '-'} |
-            | **Mudah Larut** | $30.0 \\le S_{{tot}} < 100.0$ | {'🟢 **AKTIF**' if is_fsol else '-'} |
-            | **Larut** | $10.0 \\le S_{{tot}} < 30.0$ | {'🟠 **AKTIF**' if is_sol else '-'} |
-            | **Agak Sukar Larut** | $1.0 \\le S_{{tot}} < 10.0$ | {'🟠 **AKTIF**' if is_ssol else '-'} |
-            | **Sukar Larut** | $0.1 \\le S_{{tot}} < 1.0$ | {'🔴 **AKTIF**' if is_slsol else '-'} |
-            | **Praktis Tidak Larut** | $S_{{tot}} < 0.1$ | {'🔴 **AKTIF**' if is_insol else '-'} |
-            """
-            st.markdown(table_md)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Tabs Output Navigation
+    # Navigasi Tab
     tab1, tab2, tab3 = st.tabs(
         [
             "🧠 Traceable Reasoning Chain (Forward Chaining)",
@@ -851,7 +775,7 @@ else:
 
         fig = go.Figure()
 
-        # Garis Grafik Utama
+        # Line Plot Utama
         fig.add_trace(
             go.Scatter(
                 x=pH_array,
@@ -862,7 +786,7 @@ else:
             )
         )
 
-        # Titik Merah State Saat Ini
+        # State Target Saat Ini
         fig.add_trace(
             go.Scatter(
                 x=[target_pH],
@@ -909,5 +833,6 @@ else:
 
     with tab3:
         st.subheader("Data AqSolDB + IUPAC Joined Table")
-        df_db = get_clean_dataframe(AQSOL_IUPAC_DATABASE)
-        st.dataframe(df_db, use_container_width=True)
+        st.dataframe(
+            get_clean_dataframe(AQSOL_IUPAC_DATABASE), use_container_width=True
+        )
