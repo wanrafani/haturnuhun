@@ -100,6 +100,66 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# ==========================================
+# DATA KELARUTAN TOTAL (Stot) PADA pH 7.4 (mol/L)
+# ==========================================
+stot_data = {
+    # 1. Alcohol
+    "butan-1-ol": 0.8904,
+    "benzyl alcohol": 0.3699,
+    "1-propanol": 4.1687,
+    "ethylene glycol": 16.1105,
+    "2-butanol": 2.4417,
+    # 2. Carboxylic Acid
+    "propanoic acid": 4694.13,
+    "acetic acid": 4706.13,
+    "benzoic acid": 44.71,
+    "cholic acid": 0.1130,
+    "cumic acid": 1.057,
+    # 3. Ether
+    "allyl ether": 0.9537,
+    "butoxybenzene": 0.000244,
+    "methoxychlor": 0.000000289,
+    "diethyl ether": 0.8149,
+    "anisole": 0.0141,
+    # 4. Ester
+    "dimethoate": 0.1090,
+    "cycloate": 0.000395,
+    "fenthoate": 0.0000343,
+    "ethyl acetate": 0.9432,
+    "methyl benzoate": 0.0154,
+    # 5. Aldehyde
+    "formaldehyde": 13.2008,
+    "acetaldehyde": 22.7038,
+    "benzaldehyde": 0.0617,
+    "4-methylbenzaldehyde": 0.0189,
+    "2,2,2-trichloroacetaldehyde": 0.2041,
+    # 6. Ketone
+    "cyclohexanone": 0.8763,
+    "4-methylpent-3-en-2-one": 0.2754,
+    "1-methylpyrrolidin-2-one": 10.000,
+    "acetone": 17.2187,
+    "1-phenylethan-1-one": 0.0524,
+    # 7. Amine
+    "ethylamine": 54460.5,
+    "hexylamine": 114.84,
+    "aniline": 0.3764,
+    "pyridine": 5.795,
+    "benzylamine": 2.540,
+    # 8. Phenol
+    "phenol": 0.9144,
+    "4-methylphenol": 0.1991,
+    "o-aminophenol": 0.1842,
+    "4-nitrophenol": 0.3190,
+    "4-nonylphenol": 0.0000318,
+    # 9. Multi-functional / Complex
+    "amoxicillin": 0.0135,
+    "cysteine": 2.6692,
+    "beta-alanine": 6.1268,
+    "3-aminobenzoic acid": 19.70,
+    "3-hydroxytyramine": 45.99,
+}
+
 # =========================================================
 # 3. DATABASE SENYAWA LENGKAP (45 SENYAWA)
 # =========================================================
@@ -579,7 +639,6 @@ def forward_chaining_engine(data, target_pH):
         S_total = S0 * (1 + 10 ** (target_pH - pKa1))
 
     else:
-        # Poin Revisi Foto 2: Menyertakan kondisi pKa1 > 14 secara eksplisit
         pka_cond = f"DAN pKa1 ({pKa1}) > 14" if pKa1 is not None else ""
         logs.append(
             f"🔹 [RULE NETRAL / HIGH pKa FIRED] IF Group == '{group}' {pka_cond} → Tidak terionisasi signifikan pada pH normal."
@@ -601,7 +660,7 @@ def forward_chaining_engine(data, target_pH):
         cat, color = "Praktis Tidak Larut", "#991b1b"
 
     logs.append(
-        f"🏁 [FINAL VERDICT] Kelarutan Total S_total = {S_total:.4f} mol/L → Tingkat Kelarutan: {cat}"
+        f"🏁 [FINAL VERDICT] Kelarutan Total (S0/Stot) = {S_total:.4f} mol/L → Tingkat Kelarutan: {cat}"
     )
     return S_total, cat, color, logs
 
@@ -622,7 +681,7 @@ st.markdown(
 # ==========================================
 # 6. SIDEBAR INPUT & INTERAKSI HALAMAN
 # ==========================================
-st.sidebar.header("⚙️ Menu Navigasi & Input")
+st.sidebar.header("⚙️️ Menu Navigasi & Input")
 
 compound_options = ["-- Pilih Senyawa untuk Memulai --"] + list(
     AQSOL_IUPAC_DATABASE.keys()
@@ -660,7 +719,6 @@ if selected_compound == "-- Pilih Senyawa untuk Memulai --":
     st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("📚 Dataset Gabungan AqSolDB + IUPAC pKa (45 Senyawa)")
 
-    # Poin Revisi Foto 1: Menampilkan Tabel tanpa Kolom Structure 3D
     df_db_preview = get_clean_dataframe(AQSOL_IUPAC_DATABASE)
     st.dataframe(df_db_preview, use_container_width=True)
 
@@ -672,7 +730,6 @@ else:
         "Atur pH Environment Pelarut:", 1.0, 14.0, 7.4, step=0.1
     )
 
-    # Poin Revisi Foto 3: Subheader diubah menjadi "📷 Visualisasi 3D"
     st.sidebar.markdown("---")
     st.sidebar.subheader("📷 Visualisasi 3D")
     st.sidebar.caption("💡 *Klik & geser untuk memutar atau memperbesar molekul*")
@@ -690,11 +747,11 @@ else:
         compound_data, target_pH
     )
 
-    # Display KPI Cards Berwarna (dengan Satuan mol/L)
+    # Display KPI Cards Berwarna (Kartu Metrik 1 diubah labelnya jadi S0)
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(
-            f"""<div class="metric-card"><div class="metric-label">TOTAL KELARUTAN</div>
+            f"""<div class="metric-card"><div class="metric-label">S0</div>
             <div class="metric-value">{S_total:.4f} <span style="font-size:12px">mol/L</span></div></div>""",
             unsafe_allow_html=True,
         )
@@ -736,6 +793,25 @@ else:
         st.info(
             "Alur aturan (*Forward Chaining Rules*) yang dieksekusi secara transparan berdasarkan sifat fisikokimia molekul:"
         )
+
+        # Penjelasan Acuan Tingkat Kelarutan (Standar USP)
+        st.markdown(
+            """
+            <div style="background-color:#ffffff; border:1px solid #e2e8f0; padding:14px; border-radius:8px; margin-bottom:16px;">
+                <b style="color:#1e3a8a;">📖 Kriteria Klasifikasi Tingkat Kelarutan (Standar USP / Farmakope):</b>
+                <ul style="font-size:13px; color:#334155; margin-top:6px; margin-bottom:0px;">
+                    <li><b>Sangat Mudah Larut</b> : S ≥ 100 mol/L</li>
+                    <li><b>Mudah Larut</b> : 30 ≤ S < 100 mol/L</li>
+                    <li><b>Larut</b> : 10 ≤ S < 30 mol/L</li>
+                    <li><b>Agak Sukar Larut</b> : 1.0 ≤ S < 10 mol/L</li>
+                    <li><b>Sukar Larut</b> : 0.1 ≤ S < 1.0 mol/L <i>(Contoh: Butan-1-ol S0 = 0.8904 mol/L)</i></li>
+                    <li><b>Praktis Tidak Larut</b> : S < 0.1 mol/L</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
         for log in rule_logs:
             st.markdown(
                 f'<div class="rule-box">{log}</div>', unsafe_allow_html=True
@@ -810,6 +886,5 @@ else:
 
     with tab3:
         st.subheader("Data AqSolDB + IUPAC Joined Table")
-        # Poin Revisi Foto 1: Menampilkan Tabel Bersih tanpa Kolom Gambar 3D
         df_db = get_clean_dataframe(AQSOL_IUPAC_DATABASE)
         st.dataframe(df_db, use_container_width=True)
