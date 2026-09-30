@@ -177,7 +177,7 @@ Nilai pKa1
 2. Tab 1 - Explainable AI (Rule Execution Log):
 
 for log in rule_logs:
-    st.markdown(f'<div class="rule-box">{log}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="rule-box">{log}</div>', unsafe_allow_html=True) 
 
 
 Menampilkan seluruh log penalaran (*reasoning step*) yang terjadi saat aturan dieksekusi.
@@ -193,5 +193,5 @@ Menghitung kelarutan di setiap titik pH untuk membentuk kurva kontinu.
 *Menambahkan penanda (*diamond marker*) berwarna merah pada posisi pH yang sedang dipilih pengguna.
 
 
-4. **Tab 3 - Dataset Table**:
+4.Tab 3 - Dataset Table:
 Menampilkan tabel interaktif seluruh database senyawa yang diolah menggunakan `pandas.DataFrame`.
