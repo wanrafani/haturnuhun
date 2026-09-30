@@ -575,7 +575,7 @@ def forward_chaining_engine(data, target_pH):
 
     if not is_pure_organic(smiles):
         logs.append("❌ [FILTER REJECTED] Senyawa bukan molekul organik murni.")
-        return 0.0, "Rejected", "#ef4444", logs
+        return 0.0, 0.0, "Rejected", "#ef4444", logs
 
     logs.append("✅ [FILTER PASSED] Molekul Organik Murni Terdeteksi.")
 
@@ -662,7 +662,7 @@ def forward_chaining_engine(data, target_pH):
     logs.append(
         f"🏁 [FINAL VERDICT] Kelarutan Total Stot = {S_total:.4f} mol/L → Tingkat Kelarutan: {cat}"
     )
-    return S_total, cat, color, logs
+    return S0, S_total, cat, color, logs
 
 
 # ==========================================
@@ -743,16 +743,16 @@ else:
     st.sidebar.text(f"Log S0: {compound_data.get('Log S0', 'N/A')}")
 
     # Jalankan Engine Inferensi
-    S_total, category, cat_color, rule_logs = forward_chaining_engine(
+    S0_val, S_total, category, cat_color, rule_logs = forward_chaining_engine(
         compound_data, target_pH
     )
 
-    # Display KPI Cards Berwarna (Metrik 1 = S0, Metrik 3 = TINGKAT KELARUTAN + Nilai Stot)
+    # Display KPI Cards Berwarna (Metrik 1 = S0 Intrinsik, Metrik 3 = TINGKAT KELARUTAN + Stot pada pH terpilih)
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(
-            f"""<div class="metric-card"><div class="metric-label">S0</div>
-            <div class="metric-value">{S_total:.4f} <span style="font-size:12px">mol/L</span></div></div>""",
+            f"""<div class="metric-card"><div class="metric-label">S0 (Intrinsik)</div>
+            <div class="metric-value">{S0_val:.4f} <span style="font-size:12px">mol/L</span></div></div>""",
             unsafe_allow_html=True,
         )
     with col2:
@@ -805,7 +805,7 @@ else:
 
         pH_array = np.linspace(1, 14, 200)
         S_array = [
-            forward_chaining_engine(compound_data, ph)[0] for ph in pH_array
+            forward_chaining_engine(compound_data, ph)[1] for ph in pH_array
         ]
 
         fig = go.Figure()
@@ -849,7 +849,7 @@ else:
                 linecolor="#94a3b8",
             ),
             yaxis=dict(
-                title="<b>Total Kelarutan (mol/L) - Skala Log</b>",
+                title="<b>Total Kelarutan Stot (mol/L) - Skala Log</b>",
                 title_font=dict(color="#1e3a8a", size=14),
                 tickfont=dict(color="#0f172a", size=12),
                 gridcolor="#cbd5e1",
