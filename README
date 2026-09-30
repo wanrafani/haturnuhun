@@ -3,7 +3,6 @@
 
 ## 1. Import Library & Modul
 
-```python
 import math
 import urllib.parse
 import numpy as np
@@ -14,16 +13,15 @@ import streamlit.components.v1 as components
 
 ```
 
-* **`urllib.parse`**: Mengonversi nama/string SMILES molekul menjadi format URL-safe saat memanggil API luar.
-* **`numpy` & `pandas**`: Mengolah rentang numerik pH ($1.0 - 14.0$) dan memanipulasi dataset senyawa dalam bentuk tabel Dataframe.
-* **`plotly.graph_objects`**: Membuat grafik interaktif kurva kelarutan vs pH.
-* **`streamlit` & `components**`: Menyediakan antarmuka web interaktif serta fungsi penyematan kode HTML/JS kustom.
+urllib.parse: Mengonversi nama/string SMILES molekul menjadi format URL-safe saat memanggil API luar.
+numpy & pandas: Mengolah rentang numerik pH ($1.0 - 14.0$) dan memanipulasi dataset senyawa dalam bentuk tabel Dataframe.
+plotly.graph_objects: Membuat grafik interaktif kurva kelarutan vs pH.
+streamlit & components: Menyediakan antarmuka web interaktif serta fungsi penyematan kode HTML/JS kustom.
 
 ---
 
 ## 2. Konfigurasi Halaman & Custom CSS (Tema Elegant Light)
 
-```python
 st.set_page_config(
     page_title="SoluChain - AI Organic Compound Solubility Predictor",
     page_icon="🧪",
@@ -31,27 +29,20 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-```
-
 Mengatur judul tab browser, ikon, layout menjadi *wide* (melebar), dan membuka sidebar secara otomatis.
 
-```python
 st.markdown(""" <style> ... </style> """, unsafe_allow_html=True)
-
-```
 
 Menyuntikkan CSS kustom untuk mengubah gaya visual default Streamlit:
 
-* **`.stApp`**: Mengubah warna latar belakang aplikasi menjadi abu-abu kebiruan muda (`#f8fafc`).
-* **`.main-header`**: Membuat banner gradien biru dengan efek bayangan.
-* **`.metric-card`**: Membuat kartu indikator KPI kustom dengan garis tepi biru.
-* **`.rule-box`**: Mengatur tampilan kotak log eksekusi aturan bergaya terminal/monospaced (`#eff6ff`).
+.stApp: Mengubah warna latar belakang aplikasi menjadi abu-abu kebiruan muda (`#f8fafc`).
+.main-header: Membuat banner gradien biru dengan efek bayangan.
+.metric-card`: Membuat kartu indikator KPI kustom dengan garis tepi biru.
+.rule-box: Mengatur tampilan kotak log eksekusi aturan bergaya terminal/monospaced (`#eff6ff`).
 
----
 
 ## 3. Database Fisikokimia (`stot_data` & `AQSOL_IUPAC_DATABASE`)
 
-```python
 AQSOL_IUPAC_DATABASE = {
     "butan-1-ol": {
         "Smiles": "CCCCO",
@@ -65,19 +56,17 @@ AQSOL_IUPAC_DATABASE = {
 
 ```
 
-Merupakan struktur data *dictionary* Python yang menyimpan 45 senyawa organik beserta deskriptor fisikokimianya:
+Merupakan struktur data dictionary Python yang menyimpan 45 senyawa organik beserta deskriptor fisikokimianya:
 
-* **`Smiles`**: Notasi struktur kimia.
-* **`Group`**: Klasifikasi gugus fungsi utama.
-* **`pKa1`**: Konstanta disosiasi asam/basa.
-* **`Log S0`**: Kelarutan intrinsik bentuk netral dalam skala $\log_{10}(\text{mol/L})$.
-* **`MolLogP`**: Koefisien partisipasi oktanol-air (tingkat lipofilisitas).
+Smiles: Notasi struktur kimia.
+Group: Klasifikasi gugus fungsi utama.
+pKa1: Konstanta disosiasi asam/basa.
+Log S0: Kelarutan intrinsik bentuk netral dalam skala $\log_{10}(\text{mol/L})$.
+MolLogP: Koefisien partisipasi oktanol-air (tingkat lipofilisitas).
 
----
 
 ## 4. Helper: Visualizer 3D Molekul Interaktif (`render_3dmol_viewer`)
 
-```python
 def render_3dmol_viewer(smiles_str, height=270):
     encoded_smiles = urllib.parse.quote(str(smiles_str))
     sdf_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/{encoded_smiles}/SDF?record_type=3d"
@@ -87,16 +76,13 @@ def render_3dmol_viewer(smiles_str, height=270):
 
 ```
 
-* **Fungsi**: Membangun tampilan molekul 3D di dalam sidebar.
-* **Alur Kerja**:
+Fungsi: Membangun tampilan molekul 3D di dalam sidebar.
+Alur Kerja:
 1. Meng-encode SMILES agar aman digunakan dalam URL.
-2. Mengambil struktur 3D format `.sdf` dari **PubChem REST API**.
-3. Menggunakan library JavaScript **`3Dmol.js`** untuk menampilkan model molekul tipe *Stick & Sphere* yang dapat diputar/di-zoom.
-4. **Fallback Mechanism**: Jika struktur 3D `.sdf` tidak ditemukan di PubChem, JavaScript akan menangkap error (*catch*) dan secara otomatis mengalihkan tampilan ke gambar PNG statis.
+2. Mengambil struktur 3D format .sdf dari PubChem REST API.
+3. Menggunakan library JavaScript `3Dmol.js` untuk menampilkan model molekul tipe Stick & Sphere yang dapat diputar/di-zoom.
+4. Fallback Mechanism: Jika struktur 3D .sdf tidak ditemukan di PubChem, JavaScript akan menangkap error (catch) dan secara otomatis mengalihkan tampilan ke gambar PNG statis.
 
-
-
----
 
 ## 5. Mesin Inferensi / Forward Chaining Engine (`forward_chaining_engine`)
 
@@ -104,7 +90,6 @@ Fungsi utama yang menjalankan sistem pakar berbasis aturan (*rule-based expert s
 
 ### A. Validasi Molekul Organik Murni
 
-```python
 def is_pure_organic(smiles):
     if not smiles or "." in smiles: return False
     metals = ["Na", "K", "Ca", "Mg", "Fe", "Zn", "Li", "Ba"]
@@ -112,21 +97,17 @@ def is_pure_organic(smiles):
         if m in smiles: return False
     return True
 
-```
 
-Memeriksa apakah molekul memiliki titik `.` (menandakan garam/kompleks) atau unsur logam. Jika ada, sistem akan menolak (*reject*) perhitungan karena rumus Henderson-Hasselbalch standar hanya berlaku untuk molekul organik murni.
+Memeriksa apakah molekul memiliki titik `.` (menandakan garam/kompleks) atau unsur logam. 
+Jika ada, sistem akan menolak (*reject*) perhitungan karena rumus Henderson-Hasselbalch standar hanya berlaku untuk molekul organik murni.
 
-### B. Evaluasi Aturan Ionisasi & Kalkulasi Kelarutan Total ($S_{\text{total}}$)
+### B. Evaluasi Aturan Ionisasi & Kalkulasi Kelarutan Total (S_total)
 
-```python
 # Konversi Log S0 ke skala linear (mol/L)
 S0 = 10**sol_log
 
-```
-
 Mengubah nilai intrinsik dari skala logaritma ke molaritas aktual.
 
-```python
 # Rule 1: Senyawa Netral / Tanpa pKa
 if pKa1 is None:
     S_total = S0
@@ -143,16 +124,14 @@ elif group == "Amine":
 elif group == "Phenol":
     S_total = S0 * (1 + 10 ** (target_pH - pKa1))
 
-```
 
-Mengeksekusi aturan spesifik berdasarkan gugus fungsi dan hubungan antara nilai $\text{pH}$ pelarut dengan $pKa1$:
+Mengeksekusi aturan spesifik berdasarkan gugus fungsi dan hubungan antara nilai pH pelarut dengan pKa1:
 
-* **Asam & Fenol**: Terionisasi ($A^-$) pada $\text{pH} > pKa1$, meningkatkan kelarutan secara eksponensial.
-* **Basa (Amina)**: Terprotonasi ($BH^+$) pada $\text{pH} < pKa1$, meningkatkan kelarutan pada kondisi asam.
+Asam & Fenol: Terionisasi (A^-) pada pH > pKa1, meningkatkan kelarutan secara eksponensial.
+Basa (Amina): Terprotonasi (BH^+) pada pH < pKa1, meningkatkan kelarutan pada kondisi asam.
 
 ### C. Klasifikasi Standar USP (United States Pharmacopeia)
 
-```python
 if S_total >= 100.0: cat, color = "Sangat Mudah Larut", "#16a34a"
 elif S_total >= 30.0: cat, color = "Mudah Larut", "#65a30d"
 elif S_total >= 10.0: cat, color = "Larut", "#d97706"
@@ -160,35 +139,27 @@ elif S_total >= 1.0:  cat, color = "Agak Sukar Larut", "#ea580c"
 elif S_total >= 0.1:  cat, color = "Sukar Larut", "#dc2626"
 else:                cat, color = "Praktis Tidak Larut", "#991b1b"
 
-```
 
 Mengkategorikan hasil akhir $S_{\text{total}}$ ke dalam 6 tingkatan kelarutan USP lengkap dengan kode warna indikatornya.
 
----
-
 ## 6. Sidebar & Kontrol Pengguna
 
-```python
 selected_compound = st.sidebar.selectbox("Pilih Senyawa Organik:", compound_options)
 target_pH = st.sidebar.slider("Atur pH Environment Pelarut:", 1.0, 14.0, 7.4, step=0.1)
 
-```
 
-* Memungkinkan pengguna memilih salah satu dari 45 senyawa.
-* Menyediakan slider interaktif untuk mengubah nilai pH lingkungan dari $1.0$ hingga $14.0$ (default $7.4$ - pH fisiologis).
+Memungkinkan pengguna memilih salah satu dari 45 senyawa.
+Menyediakan slider interaktif untuk mengubah nilai pH lingkungan dari 1.0 hingga 14.0 (default 7.4 - pH fisiologis).
 
----
 
 ## 7. Logika Tampilan (Landing Page vs Dashboard)
 
 ### Condition 1: Landing Page (Belum Ada Senyawa Dipilih)
 
-```python
 if selected_compound == "-- Pilih Senyawa untuk Memulai --":
     st.markdown(""" <div class="hero-card"> ... </div> """, unsafe_allow_html=True)
     st.dataframe(df_db_preview, use_container_width=True)
 
-```
 
 Menampilkan kartu *Hero/Welcome*, petunjuk langkah penggunaan, dan pratinjau tabel dataset lengkap.
 
@@ -196,33 +167,30 @@ Menampilkan kartu *Hero/Welcome*, petunjuk langkah penggunaan, dan pratinjau tab
 
 Jika senyawa dipilih, sistem langsung memproses data melalui `forward_chaining_engine` dan menampilkan:
 
-1. **4 Metrik KPI Utama**:
-* $S_0$ (Kelarutan Intrinsik)
-* Gugus Fungsi
-* Tingkat Kelarutan Total ($S_{\text{total}}$) & Kategori USP
-* Nilai $pKa1$
+1. 4 Metrik KPI Utama:
+S_0 (Kelarutan Intrinsik)
+Gugus Fungsi
+Tingkat Kelarutan Total ($S_{\text{total}}$) & Kategori USP
+Nilai pKa1
 
 
-2. **Tab 1 - Explainable AI (Rule Execution Log)**:
-```python
+2. Tab 1 - Explainable AI (Rule Execution Log):
+
 for log in rule_logs:
     st.markdown(f'<div class="rule-box">{log}</div>', unsafe_allow_html=True)
 
-```
-
 
 Menampilkan seluruh log penalaran (*reasoning step*) yang terjadi saat aturan dieksekusi.
-3. **Tab 2 - Profil pH vs Kelarutan (Plotly Curve)**:
-```python
+
+3. Tab 2 - Profil pH vs Kelarutan (Plotly Curve):
+
 pH_array = np.linspace(1, 14, 200)
 S_array = [forward_chaining_engine(compound_data, ph)[1] for ph in pH_array]
 
-```
 
-
-* Membuat 200 titik data dari pH 1 hingga 14.
-* Menghitung kelarutan di setiap titik pH untuk membentuk kurva kontinu.
-* Menambahkan penanda (*diamond marker*) berwarna merah pada posisi pH yang sedang dipilih pengguna.
+Membuat 200 titik data dari pH 1 hingga 14.
+Menghitung kelarutan di setiap titik pH untuk membentuk kurva kontinu.
+*Menambahkan penanda (*diamond marker*) berwarna merah pada posisi pH yang sedang dipilih pengguna.
 
 
 4. **Tab 3 - Dataset Table**:
